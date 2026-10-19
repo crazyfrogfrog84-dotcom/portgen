@@ -1,0 +1,10 @@
+flowchart LR
+    subgraph ci[GitHub Actions CI]
+        direction TB
+        commit[Commit or pull request] --> scan[Secret scan] --> php[PHP 8.3 and PostgreSQL 16] --> assets[Node 24 build and audit] --> browser[Playwright and axe] --> artifact[HCI artifacts]
+    end
+    subgraph deployment[Render release]
+        direction TB
+        web[Render Docker service] --> migrate[Additive migrations and demo seed] --> health[GET /up] --> smoke[Smoke form and public demo]
+    end
+    artifact -->|Checks pass| web

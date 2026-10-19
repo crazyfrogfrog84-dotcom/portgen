@@ -1,0 +1,18 @@
+erDiagram
+    PORTFOLIOS {
+        uuid id PK
+        varchar_10 slug UK
+        varchar_120 full_name
+        varchar_180 headline
+        text about_me
+        jsonb education
+        jsonb work_experience
+        jsonb skills
+        jsonb projects
+        jsonb social_links
+        varchar template_choice "nullable; constrained to three names"
+        timestamp created_at
+        timestamp updated_at
+        timestamp deleted_at "nullable soft delete"
+        timestamp undo_until "nullable recovery deadline"
+    }

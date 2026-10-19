@@ -14,18 +14,31 @@ async function tabTo(page, locator, maximumTabs = 100) {
 async function auditAndCapture(page, view, name) {
     const folder = path.resolve('docs/screenshots', view);
     fs.mkdirSync(folder, { recursive: true });
-    await page.screenshot({ path: path.join(folder, `${name}.png`), fullPage: true });
+    const privateLink = page.locator('#owner-manage-link');
+    const hasPrivateLink = await privateLink.count() > 0;
+    const originalPrivateLink = hasPrivateLink ? await privateLink.inputValue() : null;
+    if (hasPrivateLink) {
+        await privateLink.evaluate((element) => { element.value = 'https://example.invalid/private-link-redacted'; });
+    }
 
-    const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
-    const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact));
-    expect(serious, `${view}/${name} has serious or critical axe violations`).toEqual([]);
-    await assertTouchTargets(page);
+    try {
+        await page.screenshot({ path: path.join(folder, `${name}.png`), fullPage: true });
 
-    if (view === 'mobile') {
-        await page.setViewportSize({ width: 320, height: 812 });
-        const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
-        expect(dimensions.content, `${name} overflows at 320px: ${JSON.stringify(dimensions)}`).toBeLessThanOrEqual(dimensions.viewport);
-        await page.setViewportSize({ width: 375, height: 812 });
+        const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+        const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact));
+        expect(serious, `${view}/${name} has serious or critical axe violations`).toEqual([]);
+        await assertTouchTargets(page);
+
+        if (view === 'mobile') {
+            await page.setViewportSize({ width: 320, height: 812 });
+            const dimensions = await page.evaluate(() => ({ viewport: document.documentElement.clientWidth, content: document.documentElement.scrollWidth }));
+            expect(dimensions.content, `${name} overflows at 320px: ${JSON.stringify(dimensions)}`).toBeLessThanOrEqual(dimensions.viewport);
+            await page.setViewportSize({ width: 375, height: 812 });
+        }
+    } finally {
+        if (hasPrivateLink) {
+            await privateLink.evaluate((element, value) => { element.value = value; }, originalPrivateLink);
+        }
     }
 }
 
@@ -134,6 +147,8 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
         await expect(page.locator('[data-copy-status]')).toContainText('Private link copied');
         expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(manageUrl);
         await auditAndCapture(page, view, 'step-3-done-share');
+        await page.goto(publicUrl);
+        await expect(page.locator('article.theme-modern')).toBeVisible();
         await auditAndCapture(page, view, 'template-modern');
 
         await page.goto(manageUrl);

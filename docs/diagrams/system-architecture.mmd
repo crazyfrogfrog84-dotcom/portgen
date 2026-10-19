@@ -1,0 +1,12 @@
+flowchart TB
+    owner[Owner or public viewer] -->|HTTPS| browser[Browser]
+    browser --> render[Render web service]
+    github[GitHub Actions CI] -. checks pass .-> render
+    subgraph application[Laravel application in Docker]
+        direction LR
+        apache[Apache public/] --> routes[Routes and signed middleware] --> requests[Form Requests] --> controller[PortfolioController and Eloquent] --> views[Blade and Vite assets]
+        scheduler[schedule:work] --> purge[Expired portfolio purge]
+    end
+    render --> apache
+    controller --> database[(Supabase PostgreSQL)]
+    purge --> database
