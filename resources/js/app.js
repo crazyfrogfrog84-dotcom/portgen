@@ -550,3 +550,37 @@ document.addEventListener('keydown', (event) => {
         if (back) { event.preventDefault(); back.click(); }
     }
 });
+
+const publicTemplate = document.querySelector('[data-template][data-theme]');
+const themeOptions = publicTemplate?.querySelectorAll('[data-theme-toggle] input[name="portfolio-theme"]');
+const validThemes = new Set(['system', 'light', 'dark']);
+
+if (publicTemplate && themeOptions?.length) {
+    let selectedTheme = 'system';
+    try {
+        const savedTheme = localStorage.getItem('portgen:theme');
+        if (validThemes.has(savedTheme)) selectedTheme = savedTheme;
+    } catch {
+        // Theme selection still works for this page when browser storage is unavailable.
+    }
+
+    const applyTheme = (theme) => {
+        if (!validThemes.has(theme)) return;
+        publicTemplate.dataset.theme = theme;
+        for (const option of themeOptions) option.checked = option.value === theme;
+        selectedTheme = theme;
+    };
+
+    applyTheme(selectedTheme);
+    for (const option of themeOptions) {
+        option.addEventListener('change', () => {
+            if (!option.checked) return;
+            applyTheme(option.value);
+            try {
+                localStorage.setItem('portgen:theme', selectedTheme);
+            } catch {
+                announce('Theme changed for this page. Browser storage is unavailable, so it will not be remembered.');
+            }
+        });
+    }
+}

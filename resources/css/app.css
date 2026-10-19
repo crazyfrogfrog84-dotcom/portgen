@@ -1,84 +1,33 @@
 @import "tailwindcss";
+@import "./tokens.css";
+@import "@fontsource/montserrat/latin-400.css";
+@import "@fontsource/montserrat/latin-600.css";
+@import "@fontsource/montserrat/latin-700.css";
+@import "@fontsource/plus-jakarta-sans/latin-400.css";
+@import "@fontsource/plus-jakarta-sans/latin-600.css";
+@import "@fontsource/plus-jakarta-sans/latin-700.css";
+@import "@fontsource/fraunces/latin-400.css";
+@import "@fontsource/fraunces/latin-600.css";
+@import "@fontsource/fraunces/latin-700.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/caveat/latin-400.css";
 
 @source "../**/*.blade.php";
 @source "../**/*.js";
 @source "../../storage/framework/views/*.php";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
-/* C5: the application and template palettes are defined here and nowhere else. */
-:root {
-    color-scheme: light dark;
-    --simple-background: #fbfbfa;
-    --simple-foreground: #202124;
-    --simple-muted: #4b5563;
-    --simple-accent: #202124;
-    --modern-background: #f3f8fb;
-    --modern-foreground: #152536;
-    --modern-muted: #42566b;
-    --modern-accent: #075985;
-    --creative-background: #fff7ed;
-    --creative-foreground: #30122c;
-    --creative-muted: #5b3b61;
-    --creative-accent: #9d174d;
-    --ui-surface: #ffffff;
-    --ui-surface-muted: #f1f5f9;
-    --ui-foreground: #0f172a;
-    --ui-muted: #475569;
-    --ui-border: #64748b;
-    --ui-control-background: #ffffff;
-    --ui-control-foreground: #0f172a;
-    --ui-primary-background: #202124;
-    --ui-primary-foreground: #ffffff;
-    --ui-danger: #991b1b;
-    --ui-danger-background: #fef2f2;
-    --ui-success: #166534;
-    --ui-success-background: #f0fdf4;
-    --focus-ring: #7c3aed;
-    --dialog-backdrop: rgb(15 23 42 / 72%);
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --simple-background: #121212;
-        --simple-foreground: #f8fafc;
-        --simple-muted: #cbd5e1;
-        --simple-accent: #f8fafc;
-        --modern-background: #0b1721;
-        --modern-foreground: #edf6ff;
-        --modern-muted: #cbd5e1;
-        --modern-accent: #7dd3fc;
-        --creative-background: #1e1320;
-        --creative-foreground: #fff1f2;
-        --creative-muted: #e9d5ff;
-        --creative-accent: #f9a8d4;
-        --ui-surface: #17212d;
-        --ui-surface-muted: #1e293b;
-        --ui-foreground: #f8fafc;
-        --ui-muted: #cbd5e1;
-        --ui-border: #94a3b8;
-        --ui-control-background: #1e293b;
-        --ui-control-foreground: #f8fafc;
-        --ui-primary-background: #f8fafc;
-        --ui-primary-foreground: #0f172a;
-        --ui-danger: #fca5a5;
-        --ui-danger-background: #450a0a;
-        --ui-success: #86efac;
-        --ui-success-background: #052e16;
-        --focus-ring: #c4b5fd;
-        --dialog-backdrop: rgb(0 0 0 / 80%);
-    }
-}
-
 html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
 }
 
 body {
     min-width: 320px;
     margin: 0;
-    background: var(--simple-background);
-    color: var(--simple-foreground);
-    font-family: ui-sans-serif, system-ui, sans-serif;
+    background: var(--ui-background);
+    color: var(--ui-foreground);
+    font-family: var(--font-ui);
+    font-size: var(--type-body);
     line-height: 1.6;
 }
 
@@ -86,7 +35,7 @@ a {
     display: inline-flex;
     min-height: 44px;
     align-items: center;
-    color: var(--page-accent, var(--simple-accent));
+    color: var(--ui-accent);
     text-underline-offset: 0.2em;
 }
 
@@ -106,44 +55,26 @@ input[type="checkbox"] {
 }
 
 :focus-visible {
-    outline: 3px solid var(--focus-ring);
+    outline: 3px solid var(--focus, var(--ui-focus));
 }
 
 ::selection {
-    background: var(--ui-primary-background);
-    color: var(--ui-primary-foreground);
+    background: var(--ui-selection-background);
+    color: var(--ui-selection-foreground);
 }
 
-.theme-simple,
-.theme-modern,
-.theme-creative {
-    background: var(--page-background);
-    color: var(--page-foreground);
+[data-template] {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-template);
 }
 
-.theme-simple {
-    --page-background: var(--simple-background);
-    --page-foreground: var(--simple-foreground);
-    --page-muted: var(--simple-muted);
-    --page-accent: var(--simple-accent);
-}
-
-.theme-modern {
-    --page-background: var(--modern-background);
-    --page-foreground: var(--modern-foreground);
-    --page-muted: var(--modern-muted);
-    --page-accent: var(--modern-accent);
-}
-
-.theme-creative {
-    --page-background: var(--creative-background);
-    --page-foreground: var(--creative-foreground);
-    --page-muted: var(--creative-muted);
-    --page-accent: var(--creative-accent);
+[data-template] a {
+    color: var(--accent);
 }
 
 .text-muted {
-    color: var(--page-muted, var(--simple-muted));
+    color: var(--muted, var(--ui-muted));
 }
 
 .surface,
@@ -194,7 +125,7 @@ textarea.form-control {
 }
 
 .form-section > summary::marker {
-    color: var(--page-accent, var(--simple-accent));
+    color: var(--ui-accent);
 }
 
 .section-body {
@@ -301,7 +232,7 @@ textarea.form-control {
 
 .step-item[aria-current="step"] {
     border-width: 2px;
-    border-color: var(--page-accent, var(--simple-accent));
+    border-color: var(--ui-accent);
 }
 
 .step-number {
@@ -326,7 +257,7 @@ textarea.form-control {
 
 .template-card:has(input:checked) {
     border-width: 3px;
-    border-color: var(--focus-ring);
+    border-color: var(--ui-focus);
 }
 
 .template-preview {
@@ -395,7 +326,7 @@ dialog {
 }
 
 dialog::backdrop {
-    background: var(--dialog-backdrop);
+    background: var(--ui-dialog-backdrop);
 }
 
 .visually-hidden:not(:focus, :active),
@@ -447,5 +378,233 @@ dialog::backdrop {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+.pf-portfolio {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: clamp(var(--space-4), 4vw, var(--space-7));
+}
+
+.pf-theme-toggle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    color: var(--text);
+    padding: var(--space-2) var(--space-3);
+}
+
+.pf-theme-toggle legend {
+    padding-inline: var(--space-1);
+    font-size: var(--type-label);
+    font-weight: 700;
+}
+
+.pf-theme-option {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    border-radius: var(--radius-sm);
+    padding-inline: var(--space-2);
+    cursor: pointer;
+}
+
+.pf-theme-option input[type="radio"] {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    accent-color: var(--accent);
+}
+
+[data-template] .button-primary {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+}
+
+[data-template] .button-secondary {
+    border-color: var(--border);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.pf-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: clamp(var(--space-4), 5vw, var(--space-8));
+}
+
+.pf-hero__eyebrow,
+.pf-hero__headline {
+    color: var(--accent);
+}
+
+.pf-hero__actions,
+.pf-contact-links,
+.pf-project-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0;
+    list-style: none;
+}
+
+.pf-project-card__cover {
+    display: grid;
+    min-height: 10rem;
+    place-items: center;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: var(--type-h1);
+    font-weight: 700;
+}
+
+.pf-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    border-top: 1px solid var(--border);
+    margin-top: var(--space-7);
+    padding-top: var(--space-4);
+}
+
+.pf-nav__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pf-nav__link {
+    min-width: 44px;
+    justify-content: center;
+    border-bottom: 2px solid transparent;
+    padding-inline: var(--space-2);
+    text-decoration: none;
+}
+
+.pf-nav__link[aria-current="true"] {
+    border-color: var(--accent);
+    font-weight: 700;
+}
+
+.pf-section,
+.pf-project-card,
+.pf-timeline-item {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: var(--space-4);
+}
+
+.pf-skill-chip {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--text);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--type-label);
+}
+
+.pf-avatar {
+    display: grid;
+    width: 9rem;
+    aspect-ratio: 1;
+    place-items: center;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: var(--type-h2);
+    font-weight: 700;
+}
+
+.pf-avatar img,
+img.pf-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pf-external-link::after {
+    content: " ↗";
+    margin-inline-start: var(--space-1);
+}
+
+[data-template] :is(p, li, dt, dd, figcaption) {
+    max-width: 70ch;
+    font-size: max(1rem, var(--type-body));
+    line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+    .pf-hero {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media print {
+    *,
+    *::before,
+    *::after {
+        color: var(--print-foreground) !important;
+        background: var(--print-background) !important;
+        border-color: var(--print-border) !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    html,
+    body {
+        min-width: 0;
+        background: var(--print-background) !important;
+        color: var(--print-foreground) !important;
+        font-size: 12pt;
+    }
+
+    .site-header,
+    .pf-theme-toggle,
+    .status-neutral[data-toast],
+    dialog,
+    button {
+        display: none !important;
+    }
+
+    main,
+    [data-template],
+    .site-footer {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    a[href]:not([href^="#"])::after {
+        content: " (" attr(href) ")";
+        overflow-wrap: anywhere;
+        font-size: 0.9em;
     }
 }

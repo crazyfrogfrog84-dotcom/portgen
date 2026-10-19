@@ -1,5 +1,6 @@
-<article class="theme-modern mx-auto max-w-6xl rounded-2xl border border-current/15 p-6 sm:p-10" aria-label="Modern portfolio template">
+<article class="theme-modern pf-portfolio mx-auto max-w-6xl" data-template="modern" data-theme="system" aria-label="Modern portfolio template">
     <header class="rounded-2xl border border-current/20 p-6 sm:p-10">
+        <x-pf.theme-toggle template="modern" />
         <p class="text-sm font-semibold uppercase tracking-widest">Selected work · Portfolio</p>
         <h1 class="mt-3 text-4xl font-bold tracking-tight sm:text-6xl">{{ $portfolio->full_name }}</h1>
         <p class="mt-3 max-w-2xl text-xl">{{ $portfolio->headline }}</p>
