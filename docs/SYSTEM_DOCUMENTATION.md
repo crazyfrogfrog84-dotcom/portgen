@@ -528,7 +528,7 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 | Variable | Value source |
 |---|---|
 | `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE` | Render production environment; production, false, and Asia/Taipei. |
-| `APP_KEY` | Laravel-compatible base64-encoded key stored as a Render secret. |
+| `APP_KEY` | Render-generated 256-bit base64 secret, normalized to Laravel's `base64:` form when needed. |
 | `APP_URL` | Render's assigned HTTPS URL, referenced from `RENDER_EXTERNAL_URL`. |
 | `DB_CONNECTION` | `pgsql`. |
 | `DB_URL` | Render Postgres private connection string supplied through the Blueprint. |

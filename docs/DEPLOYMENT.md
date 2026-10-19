@@ -8,7 +8,7 @@ The Laravel 12.70.0 dependency set passes the Composer audit recorded for this c
 
 ## Render service
 
-`render.yaml` describes a free Docker web service and a free PostgreSQL 16 database in Singapore. It builds `Dockerfile`, checks `/up`, and waits for linked GitHub CI checks before automatically deploying. `APP_KEY` must be a Laravel-compatible base64-encoded key stored in Render's secret environment. The Blueprint derives `APP_URL` from the service's assigned URL and supplies the database connection string through `DB_URL`. The container binds Apache to Render's `PORT`, runs additive migrations and the fictional demo seeder at startup, and builds Laravel's configuration, route, and view caches. The start script supervises both Apache and `php artisan schedule:work`; the Laravel schedule runs expired portfolio cleanup every ten seconds so the undo window completes even if the owner closes the browser.
+`render.yaml` describes a free Docker web service and a free PostgreSQL 16 database in Singapore. It builds `Dockerfile`, checks `/up`, and waits for linked GitHub CI checks before automatically deploying. Render generates a 256-bit `APP_KEY` secret. Laravel's config adds the `base64:` marker when the generated value decodes to 32 bytes, which is the AES-256-CBC key length. The Blueprint derives `APP_URL` from the service's assigned URL and supplies the database connection string through `DB_URL`. The container binds Apache to Render's `PORT`, runs additive migrations and the fictional demo seeder at startup, and builds Laravel's configuration, route, and view caches. The start script supervises both Apache and `php artisan schedule:work`; the Laravel schedule runs expired portfolio cleanup every ten seconds so the undo window completes even if the owner closes the browser.
 
 Render's free web services have an ephemeral filesystem and sleep after inactivity. PortGen therefore stores records, sessions, and cache in PostgreSQL; files required after a restart must not be written to the container. Free services are suitable for a demonstration and may take about a minute to wake after sleeping. Render Free Postgres expires 30 days after creation. After expiration, it is inaccessible for a 14-day grace period; Render deletes the database and its data if it is not upgraded during that period. This deployment is for demo use and must not collect data that needs long-term retention. See [Render's free instance limits](https://render.com/docs/free), [Render Postgres](https://render.com/docs/postgresql), and [Render web services](https://render.com/docs/web-services).
 
@@ -16,7 +16,7 @@ Configure these values in the Render dashboard. Secret values must only be store
 
 | Variable | Configuration |
 |---|---|
-| `APP_KEY` | A Laravel-compatible base64-encoded key stored as a Render secret. |
+| `APP_KEY` | Render-generated 256-bit base64 secret, normalized to Laravel's `base64:` form when needed. |
 | `APP_URL` | Render's assigned HTTPS service URL, referenced through `RENDER_EXTERNAL_URL`. |
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
