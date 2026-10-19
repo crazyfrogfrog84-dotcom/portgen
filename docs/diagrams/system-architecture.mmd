@@ -1,12 +1,12 @@
 flowchart TB
     owner[Owner or public viewer] -->|HTTPS| browser[Browser]
-    browser --> render[Render web service]
+    browser --> render[Render web service: portgen-m1uh]
     github[GitHub Actions CI] -. checks pass .-> render
-    subgraph application[Laravel application in Docker]
+    subgraph application[Laravel application in PHP 8.3 Apache]
         direction LR
         apache[Apache public/] --> routes[Routes and signed middleware] --> requests[Form Requests] --> controller[PortfolioController and Eloquent] --> views[Blade and Vite assets]
-        scheduler[schedule:work] --> purge[Expired portfolio purge]
     end
     render --> apache
-    controller --> database[(Supabase PostgreSQL)]
+    controller --> database[(Render PostgreSQL)]
+    browser -->|Signed purge request after 10 seconds| purge[Expired portfolio purge]
     purge --> database

@@ -2,45 +2,44 @@
 
 ## Current status
 
-The Docker, Render Blueprint, and smoke workflow are prepared, but no live service has been built or deployed from this workspace. Docker and a Git remote are unavailable here, and Laravel 11 is outside its published security-fix window. The framework requirement is held at Laravel 11 because the product brief specifies it. Keep deployment blocked until the framework risk is resolved; a successful local SQLite test is not a production or PostgreSQL release result.
+The public repository contains branch `codex/render-deployment`. The Render service is named `portgen-m1uh` and is live at [https://portgen-m1uh-if1e.onrender.com](https://portgen-m1uh-if1e.onrender.com). Render assigned this public URL; its `-if1e` suffix is part of the working address.
+
+The Laravel 12.70.0 dependency set passes the Composer audit recorded for this checkout. The previous Laravel 11 advisories were addressed before preparing this release. The workstation has no Docker installation, so the production image will be built by GitHub CI. The PostgreSQL tests and image build must pass before Render auto-deploys the branch.
 
 ## Render service
 
-`render.yaml` describes one Docker web service in Singapore. It uses `/up` as its health check and waits for linked CI checks before auto-deploying. The container binds Apache to Render's `PORT`, serves Laravel's `public/` directory, runs additive migrations, seeds the public demo, and builds Laravel's configuration, route, and view caches. The start script supervises both Apache and `php artisan schedule:work`; the Laravel schedule runs expired portfolio cleanup every ten seconds so the undo window completes even if the owner closes the browser.
+`render.yaml` describes a Free Docker web service and a Free PostgreSQL 16 database in Singapore. It builds `Dockerfile`, checks `/up`, and waits for GitHub CI checks. Render generates a 256-bit `APP_KEY` secret; Laravel normalizes it into a stable 32-byte AES-256 key. Laravel trusts only Render's forwarded protocol so pages generate HTTPS asset URLs after Render terminates TLS. The Blueprint derives `APP_URL` from the assigned service URL and supplies the database connection string through `DB_URL`. The container binds Apache to Render's `PORT`, runs additive migrations and the fictional demo seeder at startup, and builds Laravel's configuration, route, and view caches. The start script supervises both Apache and `php artisan schedule:work`; the Laravel schedule runs expired portfolio cleanup every ten seconds so the undo window completes even if the owner closes the browser.
 
-Configure these values in the Render dashboard. The names are listed here; secret values are never stored in the repository.
+Render's free web services have an ephemeral filesystem and sleep after inactivity. PortGen therefore stores records, sessions, and cache in PostgreSQL; files required after a restart must not be written to the container. Free services are suitable for a demonstration and may take about a minute to wake after sleeping. Render Free Postgres expires 30 days after creation. After expiration, it is inaccessible for a 14-day grace period; Render deletes the database and its data if it is not upgraded during that period. This deployment is for demo use and must not collect data that needs long-term retention. See [Render's free instance limits](https://render.com/docs/free), [Render Postgres](https://render.com/docs/postgresql), and [Render web services](https://render.com/docs/web-services).
+
+Configure these values in the Render dashboard. Secret values must only be stored in Render's environment settings.
 
 | Variable | Configuration |
 |---|---|
-| `APP_KEY` | Generate for this deployment and store in Render's secret environment. |
-| `APP_URL` | The deployed HTTPS service URL. |
+| `APP_KEY` | Render-generated secret, normalized to a stable 32-byte AES-256 key. |
+| `APP_URL` | Render's assigned HTTPS service URL, referenced through `RENDER_EXTERNAL_URL`. |
 | `APP_ENV` | `production` |
 | `APP_DEBUG` | `false` |
 | `DB_CONNECTION` | `pgsql` |
-| `DB_HOST` | Supabase shared session-pooler hostname copied from the dashboard. |
-| `DB_PORT` | `5432` |
-| `DB_DATABASE` | `postgres` unless the project uses another database name. |
-| `DB_USERNAME` | The shared-pooler username format from Supabase, typically `postgres.[PROJECT_REF]`. |
-| `DB_PASSWORD` | The database password, stored as a Render secret. |
-| `DB_SSLMODE` | `require` |
-| `SESSION_DRIVER` | `file` |
-| `CACHE_STORE` | `file` |
+| `DB_URL` | Render Postgres private connection string, supplied through the Blueprint database reference. |
+| `SESSION_DRIVER` | `database` |
+| `CACHE_STORE` | `database` |
 | `QUEUE_CONNECTION` | `sync` |
 
-Supabase documents shared session mode on port 5432 and shared pooler connectivity over IPv4. Use the session-mode host and username from the Supabase Connect dialog, not a guessed region or project hostname. See [Supabase's PostgreSQL connection guide](https://supabase.com/docs/guides/database/connecting-to-postgres) and [Render's Blueprint reference](https://render.com/docs/blueprint-spec).
+Render's Blueprint references the Postgres connection string without placing the generated username or password in Git. The application uses Laravel's `DB_URL` setting to parse that connection string. See [Render's Blueprint reference](https://render.com/docs/blueprint-spec) and [Render's default environment variables](https://render.com/docs/environment-variables).
 
 ## Database safety
 
-The CI job owns an ephemeral PostgreSQL 16 database named `portgen_test` and may run `migrate:fresh` and rollback/reapply against that service only. E2E setup rejects a PostgreSQL destination unless it is explicitly marked as the local CI test database. Never point tests at Supabase. In production, run only `php artisan migrate --force`; never run `migrate:fresh` or `db:wipe`.
+The CI job owns an ephemeral local PostgreSQL 16 database named `portgen_test` and may run `migrate:fresh` and rollback/reapply against that service only. Tests must never use the Render production database. In production, run only additive migrations with `php artisan migrate --force`; never run `migrate:fresh` or `db:wipe`.
 
-The demo seeder uses the fixed public path `/p/portgen001` and fictional profile details. It is idempotent and is run by the Render startup flow. The live smoke workflow checks `/up`, `/portfolios/create`, and that seeded portfolio.
+The demo seeder uses the fixed public path `/p/portgen001` and fictional profile details. It is idempotent and runs in the Render startup flow. The live smoke workflow checks `/up`, `/portfolios/create`, and that seeded portfolio.
 
-## Live smoke check
+## Live verification
 
-After the repository is connected to GitHub and the Render service has a live URL, add the repository variable `PORTGEN_LIVE_URL` with the service's public HTTPS origin. The workflow runs after successful CI on `main` or by manual dispatch. It retries the health endpoint and checks the form and seeded public portfolio. The live URL is intentionally not recorded until a real deployment exists.
+The live service responded successfully to direct checks: `/up`, `/portfolios/create`, and `/p/portgen001` returned HTTP 200. The root URL redirects to the creation form. The GitHub live-smoke workflow still requires the public repository variable `PORTGEN_LIVE_URL` to run automatically.
 
-## Not yet verified
+## Verification notes
 
-The local environment does not include Docker, so `docker build` and the container `/up` check have not run. This checkout has no Git remote or Render service URL. CI's PostgreSQL and GitHub checks therefore remain configured but unexecuted from this checkout. `composer audit --locked` reports four advisories for Laravel 11.57.0, including a medium-severity signed-URL path-confusion advisory; Laravel's support table ended Laravel 11 security fixes on 2026-03-12. Do not deploy this dependency set as production-safe.
+GitHub CI passed for the deployed change. Render built the Docker image, applied additive migrations, seeded the fictional demo portfolio, and marked the service Live. This workstation has no Docker installation, so the production container was built by Render rather than locally. No destructive production database command was run.
 
-The required local `portgen-secrets.env` file is absent. The exact missing deployment values are `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `RENDER_API_KEY`, and `PORTGEN_LIVE_URL`. The environment also has no `GITHUB_TOKEN` or `GH_TOKEN`, and `gh auth status` reports no CLI login. The requested GitHub and Supabase accounts are signed in to the browser, but no database or hosting project was changed. The visible Supabase organization contains a different existing project, which was left untouched.
+The Blueprint binds the dedicated Render database and generated secrets. Keep the Free Postgres expiration date visible and export any required data before the 30-day expiration and 14-day grace period end.

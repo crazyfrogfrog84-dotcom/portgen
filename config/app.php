@@ -1,5 +1,21 @@
 <?php
 
+$appKey = env('APP_KEY');
+
+if (is_string($appKey) && $appKey !== '') {
+    $hasBase64Prefix = str_starts_with($appKey, 'base64:');
+    $encodedAppKey = $hasBase64Prefix ? substr($appKey, 7) : $appKey;
+    $decodedAppKey = base64_decode($encodedAppKey, true);
+
+    if ($decodedAppKey !== false && strlen($decodedAppKey) === 32) {
+        $appKey = 'base64:'.base64_encode($decodedAppKey);
+    } elseif (! $hasBase64Prefix && strlen($appKey) !== 32) {
+        $appKey = 'base64:'.base64_encode(hash('sha256', $appKey, true));
+    } elseif ($hasBase64Prefix) {
+        $appKey = 'base64:'.base64_encode(hash('sha256', $appKey, true));
+    }
+}
+
 return [
 
     /*
@@ -97,7 +113,7 @@ return [
 
     'cipher' => 'AES-256-CBC',
 
-    'key' => env('APP_KEY'),
+    'key' => $appKey,
 
     'previous_keys' => [
         ...array_filter(

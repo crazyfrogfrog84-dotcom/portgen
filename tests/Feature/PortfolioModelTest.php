@@ -69,7 +69,8 @@ class PortfolioModelTest extends TestCase
         $loaded = Portfolio::query()->findOrFail($portfolio->id);
 
         foreach ($payload as $column => $value) {
-            $this->assertSame($value, $loaded->{$column});
+            // PostgreSQL JSONB does not preserve object-key order.
+            $this->assertEquals($value, $loaded->{$column});
         }
     }
 

@@ -45,9 +45,9 @@ function hasSecret(string $line): bool
         return ! $placeholder;
     }
 
-    if (preg_match('~(?:postgres(?:ql)?://[^:\s/@]+:([^@\s]+)@[^/\s]*\.supabase(?:\.co)?)(?:/|\b)~i', $line, $matches) === 1) {
+    if (preg_match('~\bpostgres(?:ql)?://[^:\s/@]+:([^@\s]+)@[^/\s]+(?:/|\b)~i', $line, $matches) === 1) {
         $value = strtolower($matches[1]);
-        if (preg_match('/^(?:your(?:_|-)|change(?:_|-)?me|replace(?:_|-)?me|placeholder|<|\$|\*)/i', $value) !== 1) {
+        if (preg_match('/^(?:your(?:_|-)|change(?:_|-)?me|replace(?:_|-)?me|placeholder|portgen_(?:test|ci)_password|<|\$|\*)/i', $value) !== 1) {
             return true;
         }
     }

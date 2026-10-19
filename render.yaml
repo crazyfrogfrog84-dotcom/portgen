@@ -1,6 +1,14 @@
+databases:
+  - name: portgen-m1uh-db
+    databaseName: portgen
+    user: portgen
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"
+
 services:
   - type: web
-    name: portgen
+    name: portgen-m1uh
     runtime: docker
     plan: free
     region: singapore
@@ -9,37 +17,33 @@ services:
     dockerContext: .
     healthCheckPath: /up
     autoDeployTrigger: checksPass
-    preDeployCommand: php artisan migrate --force && php artisan db:seed --force
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
         value: 'false'
       - key: APP_KEY
-        sync: false
+        generateValue: true
       - key: APP_URL
-        sync: false
+        fromService:
+          type: web
+          name: portgen-m1uh
+          envVarKey: RENDER_EXTERNAL_URL
       - key: APP_TIMEZONE
         value: Asia/Taipei
       - key: DB_CONNECTION
         value: pgsql
-      - key: DB_HOST
-        sync: false
-      - key: DB_PORT
-        value: '5432'
-      - key: DB_DATABASE
-        value: postgres
-      - key: DB_USERNAME
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
-      - key: DB_SSLMODE
-        value: require
+      - key: DB_URL
+        fromDatabase:
+          name: portgen-m1uh-db
+          property: connectionString
       - key: SESSION_DRIVER
-        value: file
+        value: database
       - key: CACHE_STORE
-        value: file
+        value: database
       - key: QUEUE_CONNECTION
         value: sync
-      - key: LOG_LEVEL
-        value: info
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_SECURE_COOKIE
+        value: 'true'
