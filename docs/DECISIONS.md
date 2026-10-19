@@ -2,6 +2,7 @@
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-10-20 | Compare JSONB round-trip arrays without requiring object-key insertion order. | PostgreSQL JSONB stores object keys without an ordering guarantee, while preserving array element order; the model test should assert the stored structure rather than PostgreSQL's serialization order. |
 | 2026-10-19 | Upgrade Laravel 11 to Laravel 12.70.0 and PHPUnit 11 before deployment. | Laravel 11's security-fix window ended on 2026-03-12 and the locked framework had four advisories. The official upgrade guide describes Laravel 12 as a low-impact update; the patched release removes the current Composer advisories while retaining PHP 8.3 compatibility. |
 | 2026-10-19 | Set Composer's platform PHP version to 8.3. | The required CI and production runtime are PHP 8.3, while the workstation currently runs PHP 8.5. This keeps dependency resolution compatible with the requested runtime. |
 | 2026-10-19 | Use Tailwind CSS 4 through its official Vite plugin and use Playwright with axe-core for browser checks. | These match the required build and browser-testing stack; the packages are dev dependencies and are needed for the requested UI and accessibility gates. |
