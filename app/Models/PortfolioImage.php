@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class PortfolioImage extends Model
@@ -48,5 +49,14 @@ class PortfolioImage extends Model
         }
 
         return $value;
+    }
+
+    public function setBytesAttribute(string $value): void
+    {
+        if (DB::connection()->getDriverName() === 'pgsql' && ! preg_match('/^\\\\x([a-f0-9]+)$/i', $value)) {
+            $value = '\\x'.bin2hex($value);
+        }
+
+        $this->attributes['bytes'] = $value;
     }
 }
