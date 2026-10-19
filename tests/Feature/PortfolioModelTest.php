@@ -96,10 +96,33 @@ class PortfolioModelTest extends TestCase
         }
     }
 
-    public function test_portfolio_seeder_creates_sample_portfolios(): void
+    public function test_portfolio_seeder_creates_an_idempotent_public_demo_portfolio(): void
     {
         $this->seed(PortfolioSeeder::class);
+        $this->seed(PortfolioSeeder::class);
 
-        $this->assertDatabaseCount('portfolios', 3);
+        $this->assertDatabaseCount('portfolios', 1);
+        $this->assertDatabaseHas('portfolios', ['slug' => 'portgen001', 'template_choice' => 'Modern']);
+    }
+
+    public function test_purge_command_removes_portfolios_after_the_undo_period(): void
+    {
+        $portfolio = Portfolio::factory()->create([
+            'undo_until' => now()->subSecond(),
+        ]);
+        $portfolio->delete();
+
+        $this->artisan('portfolios:purge-expired')
+            ->expectsOutput('Permanently removed 1 expired portfolio(s).')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseMissing('portfolios', ['id' => $portfolio->id]);
+    }
+
+    public function test_expired_portfolio_cleanup_is_scheduled_every_ten_seconds(): void
+    {
+        $this->artisan('schedule:list')
+            ->expectsOutputToContain('10s  php artisan portfolios:purge-expired')
+            ->assertExitCode(0);
     }
 }

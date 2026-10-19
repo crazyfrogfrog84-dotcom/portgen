@@ -465,8 +465,10 @@ if (deletedScreen) {
                     'X-Requested-With': 'XMLHttpRequest',
                 },
             });
-            if (!response.ok) throw new Error('Purge request failed');
-            const message = (await response.json()).message;
+            if (!response.ok && response.status !== 404) throw new Error('Purge request failed');
+            const message = response.status === 404
+                ? 'Portfolio permanently deleted.'
+                : (await response.json()).message;
             if (status) status.textContent = message;
             deletedScreen.querySelector('[data-undo-form]')?.remove();
             deletedScreen.querySelector('[data-undo-countdown]')?.closest('p')?.replaceWith(Object.assign(document.createElement('p'), { textContent: message }));

@@ -1,0 +1,36 @@
+name: Live smoke
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      PORTGEN_LIVE_URL: ${{ vars.PORTGEN_LIVE_URL }}
+    steps:
+      - name: Check deployment URL is configured
+        shell: bash
+        run: |
+          if [[ -z "${PORTGEN_LIVE_URL:-}" ]]; then
+            echo "Set the repository variable PORTGEN_LIVE_URL after creating the Render service."
+            exit 1
+          fi
+      - name: Retry health and page checks
+        shell: bash
+        run: |
+          base="${PORTGEN_LIVE_URL%/}"
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors "$base/up" --output /tmp/portgen-health.txt
+          grep -q '^OK' /tmp/portgen-health.txt
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors "$base/portfolios/create" --output /tmp/portgen-create.html
+          grep -q 'Create your portfolio' /tmp/portgen-create.html
+          curl --fail --silent --show-error --retry 12 --retry-delay 10 --retry-all-errors "$base/p/portgen001" --output /tmp/portgen-demo.html
+          grep -q 'Jordan Sample' /tmp/portgen-demo.html

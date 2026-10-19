@@ -72,7 +72,7 @@ Artisan::command('portfolios:purge-expired', function () {
     $this->info("Permanently removed {$deleted} expired portfolio(s).");
 })->purpose('Permanently remove portfolios whose undo period has ended');
 
-Schedule::command('portfolios:purge-expired')->everyMinute()->withoutOverlapping();
+Schedule::command('portfolios:purge-expired')->everyTenSeconds()->withoutOverlapping();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

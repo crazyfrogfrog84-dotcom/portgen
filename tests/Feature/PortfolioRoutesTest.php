@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Portfolio;
+use Database\Seeders\PortfolioSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -122,6 +123,16 @@ class PortfolioRoutesTest extends TestCase
             ->assertSee($portfolio->full_name)
             ->assertSee($portfolio->projects[0]['name'])
             ->assertDontSee('Copy private link');
+    }
+
+    public function test_seeded_demo_portfolio_is_public_and_renders(): void
+    {
+        $this->seed(PortfolioSeeder::class);
+
+        $this->get('/p/portgen001')
+            ->assertOk()
+            ->assertSee('Jordan Sample')
+            ->assertSee('Neighborhood Guide');
     }
 
     public function test_public_template_escapes_user_supplied_markup(): void
