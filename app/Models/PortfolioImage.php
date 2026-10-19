@@ -41,7 +41,16 @@ class PortfolioImage extends Model
     public function getBytesAttribute(mixed $value): mixed
     {
         if (is_resource($value)) {
-            return stream_get_contents($value);
+            $metadata = stream_get_meta_data($value);
+            if ($metadata['seekable'] ?? false) {
+                rewind($value);
+            }
+            $bytes = stream_get_contents($value);
+            if ($metadata['seekable'] ?? false) {
+                rewind($value);
+            }
+
+            return $bytes;
         }
 
         if (is_string($value) && preg_match('/^\\\\x([a-f0-9]+)$/i', $value, $matches) && strlen($matches[1]) % 2 === 0) {

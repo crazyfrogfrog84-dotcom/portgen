@@ -14,13 +14,7 @@ class PortfolioImageController extends Controller
         abort_unless($portfolio->template_choice && $image->portfolio_id === $portfolio->id, 404);
         abort_unless(in_array($image->mime, ['image/jpeg', 'image/png', 'image/webp'], true), 404);
 
-        $bytes = $image->getRawOriginal('bytes');
-        if (is_resource($bytes)) {
-            $bytes = stream_get_contents($bytes);
-        }
-        if (is_string($bytes) && preg_match('/^\\\\x([a-f0-9]+)$/i', $bytes, $matches) && strlen($matches[1]) % 2 === 0) {
-            $bytes = hex2bin($matches[1]);
-        }
+        $bytes = $image->bytes;
         abort_unless(is_string($bytes), 404);
 
         $etag = '"'.hash('sha256', $bytes).'"';
