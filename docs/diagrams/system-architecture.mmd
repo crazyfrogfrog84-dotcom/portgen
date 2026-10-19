@@ -7,6 +7,6 @@ flowchart TB
         apache[Apache public/] --> routes[Routes and signed middleware] --> requests[Form Requests] --> controller[PortfolioController and Eloquent] --> views[Blade and Vite assets]
     end
     render --> apache
-    controller --> database[(Supabase PostgreSQL)]
+    controller --> database[(Render PostgreSQL)]
     browser -->|Signed purge request after 10 seconds| purge[Expired portfolio purge]
     purge --> database

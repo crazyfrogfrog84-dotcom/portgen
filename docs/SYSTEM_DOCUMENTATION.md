@@ -34,7 +34,7 @@ Students and early-career professionals often have information spread across doc
 
 The implementation includes portfolio creation, template selection, public viewing, signed-link management, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment configuration for Render. It does not include accounts, password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
 
-Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set currently passes `composer audit --locked`. The Render container configuration is prepared, but the Render service and a dedicated PortGen Supabase database still need creation. The deployment must run additive migrations before serving traffic. See section 8 for the release configuration and current status.
+Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set currently passes `composer audit --locked`. The deployment branch now defines a free Render web service and a dedicated Render Free Postgres database for demonstration use. Render resources and live health checks are still pending. The database expires after 30 days, followed by a 14-day upgrade grace period before deletion. See section 8 for the release configuration and current status.
 
 ## 2. Users and needs
 
@@ -76,11 +76,11 @@ The user-facing application is a modular Laravel monolith. The controller handle
 |---|---|---|
 | Server framework | Laravel 12.70.0, PHP 8.3 target | MVC routing, validation, ORM, migrations, signed URLs, and scheduled commands. The local workstation runs PHP 8.5. |
 | Views and styling | Blade, Tailwind CSS 4, Vite 8 | Server-rendered views, design tokens, responsive styling, and production asset bundles. |
-| Database | PostgreSQL 16 in CI; Supabase PostgreSQL planned for production | PostgreSQL is configured as a CI service. No production database is connected. Local tests use isolated SQLite. |
+| Database | PostgreSQL 16 in CI and Render | The CI service is isolated. A dedicated Render Free Postgres database is configured for demonstration deployment and has a 30-day expiration. |
 | Browser checks | Playwright 1.64 and axe-core 4.14 | Keyboard journey, responsive screenshots, touch target checks, and accessibility audits. |
 | Container | Docker, PHP 8.3 Apache on Render | Multi-stage image configuration is committed; the Render image build runs in GitHub Actions. |
-| Hosting | Render web service with Supabase PostgreSQL | Supabase stores portfolio data, sessions, and cache. |
-| CI | GitHub Actions | Workflow defines PHP, PostgreSQL, build, browser, and HCI artifact steps. It has not run on GitHub. |
+| Hosting | Render web service with Render Postgres | PostgreSQL stores portfolio data, sessions, and cache. The Free database is temporary demo storage. |
+| CI | GitHub Actions | Workflow defines PHP, PostgreSQL, Docker build, browser, and HCI artifact steps. The deployment branch's current run is pending. |
 
 **Table 3. Main workflow stages**
 
@@ -517,7 +517,7 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 
 ### 8.1 Release configuration
 
-`Dockerfile` builds Composer dependencies, Vite assets, and a PHP 8.3 Apache image. `docker/start.sh` binds Apache to Render's `PORT`, applies additive migrations, seeds the fictional demo, and builds Laravel's configuration, route, and view caches. It also supervises the sub-minute scheduler. Render's free plan does not support a pre-deploy command, so migration runs at service startup. Free web services sleep after inactivity and have ephemeral local storage; Supabase PostgreSQL retains application data, sessions, and cache. `.github/workflows/ci.yml` audits PHP dependencies and builds the Render image; `.github/workflows/smoke.yml` checks the configured live URL after CI.
+`Dockerfile` builds Composer dependencies, Vite assets, and a PHP 8.3 Apache image. `docker/start.sh` binds Apache to Render's `PORT`, applies additive migrations, seeds the fictional demo, and builds Laravel's configuration, route, and view caches. It also supervises the sub-minute scheduler. Render's free plan does not support a pre-deploy command, so migration runs at service startup. Free web services sleep after inactivity and have ephemeral local storage; Render Postgres retains application data, sessions, and cache until the Free database expires after 30 days. Render provides a 14-day grace period to upgrade an expired database before deleting it. `.github/workflows/ci.yml` audits PHP dependencies and builds the Render image; `.github/workflows/smoke.yml` checks the configured live URL after CI.
 
 **Figure 37. CI and deployment flow**
 
@@ -528,23 +528,21 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 | Variable | Value source |
 |---|---|
 | `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE` | Render production environment; production, false, and Asia/Taipei. |
-| `APP_KEY` | Generate once and store as a Render production secret. |
-| `APP_URL` | HTTPS origin of the deployed Render service. |
-| `DB_CONNECTION`, `DB_PORT`, `DB_DATABASE`, `DB_SSLMODE` | PostgreSQL, 5432, postgres (or configured DB name), and require. |
-| `DB_HOST` | Supabase shared session-pooler host copied from its Connect screen. |
-| `DB_USERNAME` | Supabase session-pooler username, typically `postgres.[PROJECT_REF]`. |
-| `DB_PASSWORD` | Supabase database password stored as a Render production secret. |
+| `APP_KEY` | Generated and retained by Render. |
+| `APP_URL` | Render's assigned HTTPS URL, referenced from `RENDER_EXTERNAL_URL`. |
+| `DB_CONNECTION` | `pgsql`. |
+| `DB_URL` | Render Postgres private connection string supplied through the Blueprint. |
 | `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION` | Database, database, and sync for the stateless container. |
 | `LOG_CHANNEL`, `SESSION_SECURE_COOKIE` | stderr and true for runtime logs and HTTPS session cookies. |
 | `PORTGEN_LIVE_URL` | GitHub repository variable for the smoke workflow, set only after a real deployment. |
 
-Supabase session pooler connectivity uses port 5432 and SSL mode `require`. Production migrations must be additive; `migrate:fresh` and `db:wipe` are reserved for the isolated CI database. The local test guard refuses a Supabase host. Render's free instances have ephemeral local storage, so the session and cache tables share state through PostgreSQL. The Render dashboard receives secret values; the repository contains only variable names.
+Render's Blueprint supplies the generated Postgres connection string without committing database credentials. Production migrations must be additive; `migrate:fresh` and `db:wipe` are reserved for the isolated CI database. The test harness must reject production database URLs. Render's free instances have ephemeral local storage, so the session and cache tables share state through PostgreSQL. The Free Postgres database is intended only for a demonstration because Render expires it 30 days after creation and deletes its data after a further 14-day upgrade grace period.
 
 ### 8.2 Deployment status and blockers
 
-The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`; `main` and the eight phase branches are present. The deployment changes are prepared locally on `codex/render-deployment` but are not yet pushed. The Supabase organization contains the existing `StuDyIo Project`, which was not modified. No PortGen database has been created. The requested Render service name is `portgen-m1uh`; its live URL and production environment are pending service creation.
+The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`, and the deployment branch is pushed as `codex/render-deployment`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; neither resource has been created yet. The latest branch CI run is pending. The live URL and health checks remain unverified.
 
-Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. The Render container configuration is ready, but publication still depends on connecting the deployment branch, creating a dedicated Supabase database, configuring production secrets, and running the additive production migration. No production database migration has been attempted. The public source repository is separate from the still-pending live application.
+Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. Render generates `APP_KEY` and binds the database connection through the Blueprint. Publication still depends on passing the CI gate, creating the free database and web service, then passing the additive migration and live smoke checks. No production database migration has been attempted. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
 
 ## 9. Testing and technical achievements
 
@@ -605,13 +603,13 @@ Use Ctrl/Cmd+S to save a draft or submit the current step, Alt+Right/Left to mov
 5. Start the app with `php artisan serve` and the front-end watcher with `npm run dev`.
 6. Run `php artisan test`, `./vendor/bin/pint --test`, `npm audit --omit=optional`, and `npm run test:e2e` for the local checks.
 
-Never point test commands or `migrate:fresh` at Supabase. For a supported public launch, upgrade the framework dependency to a currently supported Laravel release and re-run the full CI gate.
+Never point test commands or `migrate:fresh` at a production database. For a supported public launch, upgrade the framework dependency to a currently supported Laravel release and re-run the full CI gate.
 
 ### 11.2 Future work
 
 - Keep Laravel 12 dependencies patched and plan the Laravel 13 upgrade before Laravel 12's security-fix date.
-- Create the Render service `portgen-m1uh` under the crazyfrog account and record the live URL after the first healthy deploy.
-- Create a dedicated PortGen Supabase project, set production secrets, apply additive migrations, and pass live smoke checks.
+- Create the Render service `portgen-m1uh`, pass the live smoke checks, and record the confirmed URL.
+- Upgrade or export the Render Free Postgres database before its 30-day expiration and 14-day grace period end if any data must be retained.
 - Conduct the five-task classmate study and add real observation and SUS results.
 - Consider profile photos and project images only after launch readiness; validate type, size, alt text, preview, storage, and deletion flows.
 - Evaluate skill-logo suggestions with an explicit text fallback and no dependency on color or imagery.
@@ -633,7 +631,8 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 | 2026-10-19 | Use a deterministic fictional public demo slug (`portgen001`) and an idempotent seeder for the live smoke check. | The deployment smoke workflow needs a stable public URL to verify that migrations, seeding, and public rendering work together without using real user data. |
 | 2026-10-19 | Keep local error-preview routes available only in `local` and `testing` environments. | Playwright needs to inspect every friendly server-error screen, while production should expose only application routes. |
 | 2026-10-19 | Run local Playwright with a dedicated temporary SQLite file and reserve PostgreSQL browser tests for the isolated CI service. | This machine has no Docker, PostgreSQL server, or GitHub runner access. The browser setup overrides DB connection settings and refuses a PostgreSQL target unless it is explicitly marked as the local `portgen_test` service. |
-| 2026-10-19 | Use Render's Docker web service with Apache as the primary host. | The requested deployment target is Render; its Docker runtime supports the committed Apache image and uses the standard `PORT` variable. Supabase PostgreSQL stores persistent data, sessions, and cache. |
+| 2026-10-19 | Use Render's Docker web service with Apache as the primary host. | The requested deployment target is Render; its Docker runtime supports the committed Apache image and uses the standard `PORT` variable. This database plan was superseded by the Render Free Postgres demonstration setup on 2026-10-20. |
+| 2026-10-20 | Use Render Free Postgres for the PortGen demonstration deployment. | The user requested a free deployment. Render Free Postgres keeps demo data separate from other projects, but expires after 30 days and deletes data after a 14-day grace period unless upgraded. |
 | 2026-10-19 | Name the requested Render service `portgen-m1uh` and deploy the `codex/render-deployment` branch after its CI checks pass. | This matches the requested live URL slug and keeps the public service on a branch with CI checks before it is promoted to `main`. |
 | 2026-10-19 | Keep Laravel's ten-second deletion undo and run its scheduler in the Render container. | The owner may close the browser during the undo window; Laravel's `schedule:work` performs cleanup while the service is running, and the signed browser purge provides request-driven cleanup. |
 | 2026-10-19 | Use SQLite in memory only for the initial scaffold checks; use the dedicated local Postgres 16 service for application database tests and CI. | This avoids any accidental connection to production and allows the scaffold gate to run before a Docker service is available. |
@@ -668,8 +667,9 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 8. Laravel. “Laravel 12.x Task Scheduling.” [Official documentation](https://laravel.com/framework/docs/12.x/scheduling).
 9. Laravel. “Release Notes.” [Official framework support table](https://laravel.com/framework/docs/12.x/releases).
 10. Render. “Blueprint Specification Reference.” [Official documentation](https://render.com/docs/blueprint-spec).
-11. Supabase. “Connect to Postgres.” [Official documentation](https://supabase.com/docs/guides/database/connecting-to-postgres).
-12. Render. “Docker on Render.” [Official documentation](https://render.com/docs/docker).
+11. Render. “Deploy for Free.” [Official documentation](https://render.com/docs/free).
+12. Render. “Render Postgres.” [Official documentation](https://render.com/docs/postgresql).
+13. Render. “Docker on Render.” [Official documentation](https://render.com/docs/docker).
 
 <!-- LANDSCAPE_START -->
 ### Appendix D. HCI tracker copy
