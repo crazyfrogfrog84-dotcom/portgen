@@ -1,7 +1,7 @@
-@props(['items' => [], 'label' => 'Portfolio sections', 'variant' => 'horizontal'])
+@props(['items' => [], 'label' => 'Portfolio sections'])
 
 @if (count($items))
-    <nav aria-label="{{ $label }}" class="pf-nav pf-nav--{{ $variant }}" data-section-nav>
+    <nav aria-label="{{ $label }}" class="pf-nav" data-section-nav>
         <ul class="pf-nav__list">
             @foreach ($items as $item)
                 <li>

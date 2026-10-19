@@ -85,6 +85,16 @@ class PortfolioController extends Controller
         $portfolio->load('images');
         $profileImage = $portfolio->images->firstWhere('kind', 'profile');
         $projectImages = $portfolio->images->where('kind', 'project')->keyBy('project_index');
+        $hasContact = filled($portfolio->contact_email) || count($portfolio->social_links ?? []) > 0;
+        $navItems = array_values(array_filter([
+            ['label' => 'Home', 'href' => '#home', 'current' => true],
+            ['label' => 'About', 'href' => '#about'],
+            count($portfolio->skills ?? []) ? ['label' => 'Skills', 'href' => '#skills'] : null,
+            count($portfolio->projects ?? []) ? ['label' => 'Projects', 'href' => '#projects'] : null,
+            count($portfolio->work_experience ?? []) ? ['label' => 'Experience', 'href' => '#experience'] : null,
+            count($portfolio->education ?? []) ? ['label' => 'Education', 'href' => '#education'] : null,
+            $hasContact ? ['label' => 'Contact', 'href' => '#contact'] : null,
+        ]));
 
         return view('portfolios.show', [
             'portfolio' => $portfolio,
@@ -92,6 +102,7 @@ class PortfolioController extends Controller
             'ownerManageUrl' => session('ownerManageUrl'),
             'profileImage' => $profileImage,
             'projectImages' => $projectImages,
+            'navItems' => $navItems,
         ]);
     }
 
