@@ -6,6 +6,9 @@
         <li class="step-item" @if ($active === $number) aria-current="step" @endif>
             <span class="step-number" aria-hidden="true">{{ $number < $active ? '✓' : $number }}</span>
             <span>{{ $label }}@if ($number < $active) <span class="visually-hidden">(complete)</span>@endif</span>
+            @if ($active === $number)
+                <span class="visually-hidden">Step {{ $number }} of {{ count($steps) }}</span>
+            @endif
         </li>
     @endforeach
 </ol>

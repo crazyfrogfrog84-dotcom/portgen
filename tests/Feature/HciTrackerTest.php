@@ -36,13 +36,13 @@ class HciTrackerTest extends TestCase
         $this->assertIsString($tracker);
 
         $expected = [];
-        foreach (['S' => 8, 'N' => 7, 'H' => 10, 'U' => 7, 'C' => 5, 'V' => 8, 'R' => 3] as $prefix => $count) {
+        foreach (['S' => 8, 'N' => 7, 'H' => 10, 'U' => 7, 'C' => 5, 'V' => 8, 'R' => 3, 'T' => 8] as $prefix => $count) {
             for ($number = 1; $number <= $count; $number++) {
                 $expected[] = $prefix.$number;
             }
         }
 
-        preg_match_all('/^\|\s*([SNHUCVR]\d+)\s*\|([^\n]*)$/m', $tracker, $matches, PREG_SET_ORDER);
+        preg_match_all('/^\|\s*([SNHUCVRT]\d+)\s*\|([^\n]*)$/m', $tracker, $matches, PREG_SET_ORDER);
         $rows = [];
         foreach ($matches as $match) {
             $cells = array_map('trim', explode('|', $match[0]));

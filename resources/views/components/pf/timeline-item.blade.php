@@ -1,7 +1,7 @@
 @props(['title', 'organization' => '', 'period' => '', 'description' => ''])
 
 <li class="pf-timeline-item">
-    <h3>{{ $title }}</h3>
+    @if ($title !== '')<h3>{{ $title }}</h3>@endif
     @if ($organization !== '')
         <p class="pf-timeline-item__organization">{{ $organization }}</p>
     @endif

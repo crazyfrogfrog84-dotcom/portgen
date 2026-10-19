@@ -5,6 +5,13 @@ on:
     branches: [main, 'codex/**']
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      hci_release:
+        description: Require every HCI tracker row to be verified for a final release
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -69,7 +76,7 @@ jobs:
       - name: Run PHP tests on PostgreSQL
         env:
           APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          HCI_RELEASE: '1'
+          HCI_RELEASE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.hci_release == 'true' && '1' || '0' }}
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432

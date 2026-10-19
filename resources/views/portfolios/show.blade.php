@@ -1,22 +1,39 @@
-@extends('layouts.app')
+@extends('layouts.portfolio')
 
 @section('title', $portfolio->full_name.' — PortGen portfolio')
 
 @section('content')
-    @if ($ownerManageUrl)
-        @include('portfolios.stepper', ['active' => 3])
-        <aside class="surface mx-auto mb-6 max-w-5xl rounded-xl border p-4" aria-labelledby="manage-link-heading">
-            <p class="text-sm font-semibold uppercase tracking-wide">Step 3 of 3 · Done and share</p>
-            <h2 id="manage-link-heading" class="mt-1 text-xl font-semibold">Your portfolio is ready</h2>
-            <p class="mt-1">Copy the private manage link if you want to edit or delete your portfolio later. Anyone with that private link can manage it.</p>
-            <div class="mt-3 flex flex-col gap-2 sm:flex-row">
-                <input id="owner-manage-link" type="url" readonly value="{{ $ownerManageUrl }}" aria-label="Private manage link" class="form-control min-w-0 flex-1">
-                <button type="button" class="button-secondary" data-copy-target="owner-manage-link">Copy private link</button>
+    @php
+        $nameParts = preg_split('/\s+/u', trim($portfolio->full_name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $brandMark = collect(array_slice($nameParts, 0, 2))->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
+    @endphp
+    <div class="pf-page" data-template="{{ $template }}" data-theme="system">
+        <header class="pf-site-header">
+            <div class="pf-site-header__inner">
+                <a class="pf-brand" href="#home">
+                    <span class="pf-brand__mark" aria-hidden="true">{{ $brandMark }}</span>
+                    <span class="pf-brand__name">{{ $portfolio->full_name }}</span>
+                </a>
+                <x-pf.nav :items="$navItems" />
+                <x-pf.theme-toggle :template="$template" />
             </div>
-            <p class="mt-2 text-sm" data-copy-status role="status" aria-live="polite"></p>
-            <p class="mt-3">Public page: <a href="{{ route('portfolio.show', ['portfolio' => $portfolio]) }}">{{ route('portfolio.show', ['portfolio' => $portfolio]) }}</a></p>
-        </aside>
-    @endif
-
-    @include('portfolios.templates.'.$template, ['portfolio' => $portfolio])
+        </header>
+        <main id="main" class="pf-main" tabindex="-1">
+            @include('portfolios.templates.'.$template, ['portfolio' => $portfolio, 'profileImage' => $profileImage, 'projectImages' => $projectImages])
+        </main>
+        @if ($ownerManageUrl)
+            <aside class="pf-owner-note" aria-labelledby="manage-link-heading">
+                @include('portfolios.stepper', ['active' => 3])
+                <h2 id="manage-link-heading">Your portfolio is ready</h2>
+                <p>Keep this private link to manage your portfolio later. Anyone with the link can manage it.</p>
+                <div class="pf-owner-note__actions">
+                    <input id="owner-manage-link" type="url" readonly value="{{ $ownerManageUrl }}" aria-label="Private manage link" class="form-control">
+                    <button type="button" class="button-secondary" data-copy-target="owner-manage-link">Copy private link</button>
+                </div>
+                <p data-copy-status role="status" aria-live="polite"></p>
+                <p>Public page: <a href="{{ route('portfolio.show', ['portfolio' => $portfolio]) }}">{{ route('portfolio.show', ['portfolio' => $portfolio]) }}</a></p>
+            </aside>
+        @endif
+        <x-pf.footer :name="$portfolio->full_name" :links="$portfolio->social_links ?? []" :email="$portfolio->contact_email" />
+    </div>
 @endsection

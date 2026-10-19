@@ -553,11 +553,11 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-const publicTemplate = document.querySelector('[data-template][data-theme]');
-const themeOptions = publicTemplate?.querySelectorAll('[data-theme-toggle] input[name="portfolio-theme"]');
+const publicTemplates = document.querySelectorAll('[data-template][data-theme]');
+const themeOptions = document.querySelectorAll('[data-theme-toggle] input[name="portfolio-theme"]');
 const validThemes = new Set(['system', 'light', 'dark']);
 
-if (publicTemplate && themeOptions?.length) {
+if (publicTemplates.length && themeOptions.length) {
     let selectedTheme = 'system';
     try {
         const savedTheme = localStorage.getItem('portgen:theme');
@@ -568,7 +568,7 @@ if (publicTemplate && themeOptions?.length) {
 
     const applyTheme = (theme) => {
         if (!validThemes.has(theme)) return;
-        publicTemplate.dataset.theme = theme;
+        for (const template of publicTemplates) template.dataset.theme = theme;
         for (const option of themeOptions) option.checked = option.value === theme;
         selectedTheme = theme;
     };
@@ -585,4 +585,46 @@ if (publicTemplate && themeOptions?.length) {
             }
         });
     }
+}
+
+const sectionNav = document.querySelector('[data-section-nav]');
+if (sectionNav && 'IntersectionObserver' in window) {
+    const sectionLinks = [...sectionNav.querySelectorAll('a[href^="#"]')];
+    const sectionTargets = sectionLinks
+        .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+        .filter(Boolean);
+
+    const setCurrentSection = (sectionId) => {
+        for (const link of sectionLinks) {
+            if (link.hash === `#${sectionId}`) link.setAttribute('aria-current', 'true');
+            else link.removeAttribute('aria-current');
+        }
+    };
+
+    const updateFromViewport = () => {
+        const readingLine = window.innerHeight * 0.3;
+        const currentSection = sectionTargets
+            .filter((section) => section.getBoundingClientRect().top <= readingLine)
+            .at(-1) || sectionTargets[0];
+        if (currentSection) setCurrentSection(currentSection.id);
+    };
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+        if (entries.length) updateFromViewport();
+    }, { rootMargin: '0px 0px -25% 0px', threshold: 0 });
+
+    for (const section of sectionTargets) sectionObserver.observe(section);
+    let scrollUpdatePending = false;
+    window.addEventListener('scroll', () => {
+        if (scrollUpdatePending) return;
+        scrollUpdatePending = true;
+        requestAnimationFrame(() => {
+            updateFromViewport();
+            scrollUpdatePending = false;
+        });
+    }, { passive: true });
+    sectionNav.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href^="#"]');
+        if (link?.hash) setCurrentSection(decodeURIComponent(link.hash.slice(1)));
+    });
 }

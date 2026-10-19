@@ -11,6 +11,26 @@ async function tabTo(page, locator, maximumTabs = 100) {
     throw new Error(`Could not reach ${await locator.toString()} using the keyboard.`);
 }
 
+async function captureScreenshot(page, outputPath) {
+    const image = await page.screenshot({ fullPage: true, type: 'png' });
+    const stagingPath = `${outputPath}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(stagingPath, image);
+
+    try {
+        for (let attempt = 0; ; attempt++) {
+            try {
+                fs.renameSync(stagingPath, outputPath);
+                return;
+            } catch (error) {
+                if (attempt >= 2) throw error;
+                await new Promise((resolve) => setTimeout(resolve, 100 * (attempt + 1)));
+            }
+        }
+    } finally {
+        if (fs.existsSync(stagingPath)) fs.rmSync(stagingPath, { force: true });
+    }
+}
+
 async function auditAndCapture(page, view, name) {
     const folder = path.resolve('docs/screenshots', view);
     fs.mkdirSync(folder, { recursive: true });
@@ -22,7 +42,7 @@ async function auditAndCapture(page, view, name) {
     }
 
     try {
-        await page.screenshot({ path: path.join(folder, `${name}.png`), fullPage: true });
+        await captureScreenshot(page, path.join(folder, `${name}.png`));
 
         const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
         const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact));
@@ -64,6 +84,15 @@ async function openAndChoose(page, manageUrl, name, view) {
     await page.goto(publicUrl);
     await expect(page.locator(`article.theme-${name.toLowerCase()}`)).toBeVisible();
     await auditAndCapture(page, view, `template-${name.toLowerCase()}`);
+    if (name === 'Simple') {
+        await page.locator('[data-theme-toggle] input[name="portfolio-theme"][value="light"]').check();
+        await auditAndCapture(page, view, 'template-simple-light');
+        await page.locator('[data-theme-toggle] input[name="portfolio-theme"][value="dark"]').check();
+        await auditAndCapture(page, view, 'template-simple-dark');
+        await page.locator('#skills').evaluate((element) => window.scrollTo(0, element.getBoundingClientRect().top + window.scrollY - 120));
+        await expect(page.locator('[data-section-nav] a[href="#skills"]')).toHaveAttribute('aria-current', 'true');
+        await page.locator('[data-theme-toggle] input[name="portfolio-theme"][value="system"]').check();
+    }
     return publicUrl;
 }
 
@@ -93,6 +122,8 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
         await page.keyboard.type('Designer building useful tools');
         await tabTo(page, page.locator('#about_me'));
         await page.keyboard.type('I make thoughtful digital products and accessible community tools.');
+        await page.locator('#location').fill('Taipei, Taiwan');
+        await page.locator('#contact_email').fill('avery@example.test');
 
         const skillSection = page.locator('[data-section]').filter({ has: page.locator('[data-repeat-group="skills"]') });
         const skillSummary = skillSection.locator('summary');
@@ -115,6 +146,14 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
             ['skill-0', 'Research'],
             ['skill-1', 'Design'],
         ]);
+
+        const projectSection = page.locator('[data-section]').filter({ has: page.locator('[data-repeat-group="projects"]') });
+        await tabTo(page, projectSection.locator('summary'));
+        await page.keyboard.press('Enter');
+        await page.locator('#project-0-name').fill('Community Guide');
+        await page.locator('#project-0-description').fill('An accessible guide to local services and community resources.');
+        await page.locator('#project-0-url').fill('https://example.test/community-guide');
+        await page.locator('#project-0-tags').fill('Accessibility, Research');
 
         await page.keyboard.press('Control+s');
         await expect(page.locator('[data-draft-status]')).toContainText('Draft saved on this device');
@@ -221,7 +260,7 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
 
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.goto(publicUrl);
-        const creativeDarkPalette = await page.locator('.theme-creative').evaluate((element) => {
+        const creativeDarkPalette = await page.locator('[data-template="creative"]').evaluate((element) => {
             const probe = document.createElement('span');
             probe.style.backgroundColor = 'var(--bg)';
             element.append(probe);
