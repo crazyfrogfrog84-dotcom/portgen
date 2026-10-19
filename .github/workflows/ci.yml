@@ -12,6 +12,20 @@ permissions:
 jobs:
   scaffold:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: portgen_test
+          POSTGRES_PASSWORD: portgen_test_password
+          POSTGRES_DB: portgen_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U portgen_test -d portgen_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - name: Set up PHP 8.3
@@ -31,11 +45,28 @@ jobs:
         run: composer install --no-interaction --prefer-dist
       - name: Run Pint
         run: ./vendor/bin/pint --test
-      - name: Run PHP tests
+      - name: Verify PostgreSQL migrations and rollback
         env:
           APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ':memory:'
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: portgen_test
+          DB_USERNAME: portgen_test
+          DB_PASSWORD: portgen_test_password
+        run: |
+          php artisan migrate:fresh --force
+          php artisan migrate:rollback --step=1 --force
+          php artisan migrate --force
+      - name: Run PHP tests on PostgreSQL
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: portgen_test
+          DB_USERNAME: portgen_test
+          DB_PASSWORD: portgen_test_password
         run: php artisan test
       - name: Install Node dependencies
         run: npm ci

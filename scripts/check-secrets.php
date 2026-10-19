@@ -38,9 +38,9 @@ function hasSecret(string $line): bool
         }
     }
 
-    if (preg_match('~\b(?:SUPABASE_PASSWORD|(?:SUPABASE_)?(?:DB|DATABASE)_PASSWORD)\s*[:=]\s*["\']?([^"\'\s#]+)~i', $line, $matches) === 1) {
+    if (preg_match('~\b(?:SUPABASE_PASSWORD|(?:SUPABASE_)?(?:DB|DATABASE|POSTGRES)_PASSWORD)\s*[:=]\s*["\']?([^"\'\s#]+)~i', $line, $matches) === 1) {
         $value = strtolower($matches[1]);
-        $placeholder = preg_match('/^(?:$|\$|<|\*|your(?:_|-)|change(?:_|-)?me|replace(?:_|-)?me|placeholder)/i', $value) === 1;
+        $placeholder = preg_match('/^(?:$|\$|<|\*|your(?:_|-)|change(?:_|-)?me|replace(?:_|-)?me|placeholder|portgen_(?:test|ci)_password)$/i', $value) === 1;
 
         return ! $placeholder;
     }

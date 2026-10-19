@@ -2,6 +2,8 @@
 
 Status describes implementation evidence: `Planned` means the behavior is not implemented; `Implemented` means the code exists; `Verified` requires a named test or committed screenshot.
 
+Phase 2 adds the structured portfolio schema and database integrity tests. User-facing HCI behaviors remain `Planned` until their screens and interactions are implemented and verified.
+
 | ID | Principle | Where applied (route/view/file paths) | How it is applied | Evidence (test name or screenshot path) | Status |
 |---|---|---|---|---|---|
 | S1 | Consistency | `resources/views/welcome.blade.php`; `resources/css/app.css` | Shared layout, repeated button styles, and stable navigation placement. | — | Planned |
