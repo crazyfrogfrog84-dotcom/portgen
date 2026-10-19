@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scaffold:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: dom, fileinfo, mbstring, pdo_pgsql, pgsql, sqlite3, xml, zip
+          coverage: none
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Check secrets and environment files
+        run: php scripts/check-secrets.php --worktree
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Run Pint
+        run: ./vendor/bin/pint --test
+      - name: Run PHP tests
+        env:
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: php artisan test
+      - name: Install Node dependencies
+        run: npm ci
+      - name: Build assets
+        run: npm run build

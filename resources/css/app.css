@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@source "../**/*.blade.php";
+@source "../**/*.js";
+@source "../../storage/framework/views/*.php";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+
+/* C5: all application and template color values live in this token block. */
+:root {
+    color-scheme: light dark;
+    --simple-background: #fbfbfa;
+    --simple-foreground: #202124;
+    --simple-muted: #4b5563;
+    --simple-accent: #1d4ed8;
+    --modern-background: #f3f8fb;
+    --modern-foreground: #152536;
+    --modern-muted: #42566b;
+    --modern-accent: #075985;
+    --creative-background: #fff7ed;
+    --creative-foreground: #30122c;
+    --creative-muted: #5b3b61;
+    --creative-accent: #9d174d;
+    --focus-ring: #7c3aed;
+    --success: #166534;
+    --error: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --simple-background: #121212;
+        --simple-foreground: #f8fafc;
+        --simple-muted: #cbd5e1;
+        --simple-accent: #93c5fd;
+        --modern-background: #0b1721;
+        --modern-foreground: #edf6ff;
+        --modern-muted: #cbd5e1;
+        --modern-accent: #7dd3fc;
+        --creative-background: #1e1320;
+        --creative-foreground: #fff1f2;
+        --creative-muted: #e9d5ff;
+        --creative-accent: #f9a8d4;
+        --focus-ring: #c4b5fd;
+        --success: #86efac;
+        --error: #fca5a5;
+    }
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-width: 320px;
+    margin: 0;
+    background: var(--page-background, var(--simple-background));
+    color: var(--page-foreground, var(--simple-foreground));
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.6;
+}
+
+a {
+    color: var(--page-accent, var(--simple-accent));
+    text-underline-offset: 0.2em;
+}
+
+button,
+input,
+textarea,
+select,
+a.button {
+    min-height: 44px;
+}
+
+button,
+a,
+input,
+textarea,
+select,
+summary {
+    outline-offset: 3px;
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus-ring);
+}
+
+.theme-simple {
+    --page-background: var(--simple-background);
+    --page-foreground: var(--simple-foreground);
+    --page-muted: var(--simple-muted);
+    --page-accent: var(--simple-accent);
+}
+
+.theme-modern {
+    --page-background: var(--modern-background);
+    --page-foreground: var(--modern-foreground);
+    --page-muted: var(--modern-muted);
+    --page-accent: var(--modern-accent);
+}
+
+.theme-creative {
+    --page-background: var(--creative-background);
+    --page-foreground: var(--creative-foreground);
+    --page-muted: var(--creative-muted);
+    --page-accent: var(--creative-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

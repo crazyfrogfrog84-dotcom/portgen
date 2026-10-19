@@ -1,0 +1,9 @@
+# PortGen decisions log
+
+| Date | Decision | Reason |
+|---|---|---|
+| 2026-10-19 | Keep Laravel 11 as the implementation target because the approved product brief fixes that stack; use the latest 11.x line available from Composer. | Changing the framework major would conflict with the explicit stack requirement. Composer's current security policy blocked normal dependency resolution, so the scaffold was installed with `--no-security-blocking`; Composer reported four advisories affecting `laravel/framework`. Laravel's published support table ends Laravel 11 security fixes on 2026-03-12. Treat production deployment as blocked until the framework is upgraded or the risk is explicitly resolved; do not represent this stack as production-safe. |
+| 2026-10-19 | Set Composer's platform PHP version to 8.3. | The required CI and production runtime are PHP 8.3, while the workstation currently runs PHP 8.5. This keeps dependency resolution compatible with the requested runtime. |
+| 2026-10-19 | Use Tailwind CSS 4 through its official Vite plugin and use Playwright with axe-core for browser checks. | These match the required build and browser-testing stack; the packages are dev dependencies and are needed for the requested UI and accessibility gates. |
+| 2026-10-19 | Upgrade Vite and `laravel-vite-plugin` to versions compatible with Node 24 and Vite 8 after npm audit found vulnerable esbuild/Vite dependencies. | The existing Laravel 11 skeleton pinned Vite 5, which produced moderate and high npm audit findings. The current Laravel Vite plugin supports Vite 8; the updated dependency tree reports zero npm vulnerabilities. |
+| 2026-10-19 | Use SQLite in memory only for the initial scaffold checks; use the dedicated local Postgres 16 service for application database tests and CI. | This avoids any accidental connection to production and allows the scaffold gate to run before a Docker service is available. |

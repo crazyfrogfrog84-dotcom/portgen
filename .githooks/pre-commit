@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+set -eu
+php scripts/check-secrets.php --staged
