@@ -26,21 +26,27 @@ class PortfolioController extends Controller
         $portfolio = Portfolio::create($this->structuredData($request->validated()));
         $ownerManageUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
 
-        return redirect()
-            ->route('portfolio.select-template', ['portfolio' => $portfolio])
+        return redirect(URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio]))
             ->with('status', 'Your portfolio draft is saved. Choose a template to continue.')
             ->with('ownerManageUrl', $ownerManageUrl);
     }
 
-    public function selectTemplate(Portfolio $portfolio): View
+    public function selectTemplate(Request $request, Portfolio $portfolio): View
     {
         $backUrl = route('portfolios.create');
-        if (session()->has('ownerManageUrl')) {
+        $fromManage = $request->boolean('from_manage');
+        if ($fromManage) {
+            $backUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
+        } elseif (session()->has('ownerManageUrl')) {
             session()->keep(['ownerManageUrl']);
             $backUrl = URL::signedRoute('manage.edit', ['portfolio' => $portfolio]);
         }
+        $saveTemplateUrl = URL::signedRoute('portfolio.save-template', array_filter([
+            'portfolio' => $portfolio,
+            'from_manage' => $fromManage ? 1 : null,
+        ], fn ($value) => $value !== null));
 
-        return view('portfolios.select-template', compact('portfolio', 'backUrl'));
+        return view('portfolios.select-template', compact('portfolio', 'backUrl', 'saveTemplateUrl', 'fromManage'));
     }
 
     public function saveTemplate(SaveTemplateRequest $request, Portfolio $portfolio): RedirectResponse
@@ -48,6 +54,11 @@ class PortfolioController extends Controller
         $ownerManageUrl = session('ownerManageUrl');
         $portfolio->template_choice = $request->validated('template_choice');
         $portfolio->save();
+
+        if ($request->boolean('from_manage')) {
+            return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
+                ->with('status', 'Your template has been changed.');
+        }
 
         return redirect()
             ->route('portfolio.show', ['portfolio' => $portfolio])
@@ -58,7 +69,7 @@ class PortfolioController extends Controller
     public function show(Portfolio $portfolio): View|RedirectResponse
     {
         if (! $portfolio->template_choice) {
-            return redirect()->route('portfolio.select-template', ['portfolio' => $portfolio]);
+            abort(404);
         }
 
         $template = strtolower($portfolio->template_choice);
@@ -77,6 +88,7 @@ class PortfolioController extends Controller
             'publicUrl' => route('portfolio.show', ['portfolio' => $portfolio]),
             'editUrl' => URL::signedRoute('manage.edit', ['portfolio' => $portfolio]),
             'deleteUrl' => URL::signedRoute('manage.destroy', ['portfolio' => $portfolio]),
+            'changeTemplateUrl' => URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio, 'from_manage' => 1]),
         ]);
     }
 
@@ -118,6 +130,7 @@ class PortfolioController extends Controller
                 'message' => 'Portfolio deleted. You have 10 seconds to undo.',
                 'undoUrl' => $undoUrl,
                 'purgeUrl' => $purgeUrl,
+                'deletedUrl' => $deletedUrl,
                 'undoUntil' => $portfolio->undo_until->toIso8601String(),
             ]);
         }
@@ -159,7 +172,10 @@ class PortfolioController extends Controller
         $portfolio->save();
 
         if ($request->expectsJson()) {
-            return response()->json(['message' => 'Deletion undone. Your portfolio is restored.']);
+            return response()->json([
+                'message' => 'Deletion undone. Your portfolio is restored.',
+                'manageUrl' => URL::signedRoute('manage.show', ['portfolio' => $portfolio]),
+            ]);
         }
 
         return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))

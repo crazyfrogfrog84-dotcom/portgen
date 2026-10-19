@@ -8,12 +8,18 @@ Route::get('/', fn () => redirect()->route('portfolios.create'))->name('home');
 Route::get('/up', HealthController::class)->name('health');
 
 Route::get('/portfolios/create', [PortfolioController::class, 'create'])->name('portfolios.create');
+Route::view('/help', 'help')->name('help');
+if (app()->environment(['local', 'testing'])) {
+    Route::get('/__local-errors/{status}', fn (string $status) => abort((int) $status))
+        ->whereIn('status', ['403', '404', '419', '429', '500']);
+}
 Route::post('/store', [PortfolioController::class, 'store'])->middleware('throttle:20,1')->name('portfolios.store');
 
 Route::get('/portfolio/{portfolio:slug}/select-template', [PortfolioController::class, 'selectTemplate'])
+    ->middleware('signed')
     ->name('portfolio.select-template');
 Route::post('/portfolio/{portfolio:slug}/save-template', [PortfolioController::class, 'saveTemplate'])
-    ->middleware('throttle:20,1')
+    ->middleware(['signed', 'throttle:20,1'])
     ->name('portfolio.save-template');
 Route::get('/p/{portfolio:slug}', [PortfolioController::class, 'show'])->name('portfolio.show');
 

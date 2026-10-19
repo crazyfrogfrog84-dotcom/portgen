@@ -5,13 +5,13 @@
 @source "../../storage/framework/views/*.php";
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
-/* C5: all application and template color values live in this token block. */
+/* C5: the application and template palettes are defined here and nowhere else. */
 :root {
     color-scheme: light dark;
     --simple-background: #fbfbfa;
     --simple-foreground: #202124;
     --simple-muted: #4b5563;
-    --simple-accent: #1d4ed8;
+    --simple-accent: #202124;
     --modern-background: #f3f8fb;
     --modern-foreground: #152536;
     --modern-muted: #42566b;
@@ -20,9 +20,21 @@
     --creative-foreground: #30122c;
     --creative-muted: #5b3b61;
     --creative-accent: #9d174d;
+    --ui-surface: #ffffff;
+    --ui-surface-muted: #f1f5f9;
+    --ui-foreground: #0f172a;
+    --ui-muted: #475569;
+    --ui-border: #64748b;
+    --ui-control-background: #ffffff;
+    --ui-control-foreground: #0f172a;
+    --ui-primary-background: #202124;
+    --ui-primary-foreground: #ffffff;
+    --ui-danger: #991b1b;
+    --ui-danger-background: #fef2f2;
+    --ui-success: #166534;
+    --ui-success-background: #f0fdf4;
     --focus-ring: #7c3aed;
-    --success: #166534;
-    --error: #b91c1c;
+    --dialog-backdrop: rgb(15 23 42 / 72%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -30,7 +42,7 @@
         --simple-background: #121212;
         --simple-foreground: #f8fafc;
         --simple-muted: #cbd5e1;
-        --simple-accent: #93c5fd;
+        --simple-accent: #f8fafc;
         --modern-background: #0b1721;
         --modern-foreground: #edf6ff;
         --modern-muted: #cbd5e1;
@@ -39,9 +51,21 @@
         --creative-foreground: #fff1f2;
         --creative-muted: #e9d5ff;
         --creative-accent: #f9a8d4;
+        --ui-surface: #17212d;
+        --ui-surface-muted: #1e293b;
+        --ui-foreground: #f8fafc;
+        --ui-muted: #cbd5e1;
+        --ui-border: #94a3b8;
+        --ui-control-background: #1e293b;
+        --ui-control-foreground: #f8fafc;
+        --ui-primary-background: #f8fafc;
+        --ui-primary-foreground: #0f172a;
+        --ui-danger: #fca5a5;
+        --ui-danger-background: #450a0a;
+        --ui-success: #86efac;
+        --ui-success-background: #052e16;
         --focus-ring: #c4b5fd;
-        --success: #86efac;
-        --error: #fca5a5;
+        --dialog-backdrop: rgb(0 0 0 / 80%);
     }
 }
 
@@ -52,13 +76,16 @@ html {
 body {
     min-width: 320px;
     margin: 0;
-    background: var(--page-background, var(--simple-background));
-    color: var(--page-foreground, var(--simple-foreground));
+    background: var(--simple-background);
+    color: var(--simple-foreground);
     font-family: ui-sans-serif, system-ui, sans-serif;
     line-height: 1.6;
 }
 
 a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
     color: var(--page-accent, var(--simple-accent));
     text-underline-offset: 0.2em;
 }
@@ -67,21 +94,31 @@ button,
 input,
 textarea,
 select,
-a.button {
+summary {
     min-height: 44px;
+    outline-offset: 3px;
 }
 
-button,
-a,
-input,
-textarea,
-select,
-summary {
-    outline-offset: 3px;
+input[type="radio"],
+input[type="checkbox"] {
+    min-width: 44px;
+    min-height: 44px;
 }
 
 :focus-visible {
     outline: 3px solid var(--focus-ring);
+}
+
+::selection {
+    background: var(--ui-primary-background);
+    color: var(--ui-primary-foreground);
+}
+
+.theme-simple,
+.theme-modern,
+.theme-creative {
+    background: var(--page-background);
+    color: var(--page-foreground);
 }
 
 .theme-simple {
@@ -103,6 +140,303 @@ summary {
     --page-foreground: var(--creative-foreground);
     --page-muted: var(--creative-muted);
     --page-accent: var(--creative-accent);
+}
+
+.text-muted {
+    color: var(--page-muted, var(--simple-muted));
+}
+
+.surface,
+.form-section,
+.form-card {
+    background: var(--ui-surface);
+}
+
+.surface,
+.form-section,
+.form-card,
+.form-control,
+.step-item,
+.template-card {
+    border: 1px solid var(--ui-border);
+}
+
+.surface-muted,
+.form-card {
+    background: var(--ui-surface-muted);
+}
+
+.form-control {
+    width: 100%;
+    border-radius: 0.5rem;
+    background: var(--ui-control-background);
+    color: var(--ui-control-foreground);
+    padding: 0.5rem 0.75rem;
+}
+
+textarea.form-control {
+    min-height: 7rem;
+}
+
+.form-section {
+    overflow: clip;
+    border-radius: 0.85rem;
+}
+
+.form-section > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.form-section > summary::marker {
+    color: var(--page-accent, var(--simple-accent));
+}
+
+.section-body {
+    display: grid;
+    gap: 1rem;
+    padding: 0.25rem 1rem 1rem;
+}
+
+.section-completion {
+    display: inline-flex;
+    min-width: 6.25rem;
+    min-height: 2rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.button-primary,
+.button-secondary,
+.button-danger,
+.button-text {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid var(--ui-border);
+    border-radius: 0.65rem;
+    padding: 0.55rem 1rem;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button-primary {
+    border-color: var(--ui-primary-background);
+    background: var(--ui-primary-background);
+    color: var(--ui-primary-foreground);
+}
+
+.button-secondary,
+.button-text {
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+}
+
+.button-danger {
+    border-color: var(--ui-danger);
+    background: var(--ui-danger-background);
+    color: var(--ui-danger);
+}
+
+.status-error,
+.status-success,
+.status-neutral {
+    border: 1px solid currentColor;
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+}
+
+.status-error {
+    background: var(--ui-danger-background);
+    color: var(--ui-danger);
+}
+
+.status-success {
+    background: var(--ui-success-background);
+    color: var(--ui-success);
+}
+
+.status-neutral {
+    background: var(--ui-surface-muted);
+    color: var(--ui-foreground);
+}
+
+.site-header,
+.site-footer {
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+}
+
+.stepper {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+}
+
+.step-item {
+    display: flex;
+    min-height: 3.5rem;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+    padding: 0.5rem 0.75rem;
+}
+
+.step-item[aria-current="step"] {
+    border-width: 2px;
+    border-color: var(--page-accent, var(--simple-accent));
+}
+
+.step-number {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    flex: none;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.template-card {
+    display: block;
+    border-radius: 1rem;
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+    padding: 1rem;
+    cursor: pointer;
+}
+
+.template-card:has(input:checked) {
+    border-width: 3px;
+    border-color: var(--focus-ring);
+}
+
+.template-preview {
+    display: block;
+    margin-top: 1rem;
+    overflow: hidden;
+    border: 1px solid currentColor;
+    border-radius: 0.8rem;
+    padding: 1rem;
+}
+
+.template-preview h3 {
+    margin-top: 0.5rem;
+    font-size: 1.35rem;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.template-preview .preview-project {
+    margin-top: 1rem;
+    border-top: 1px solid currentColor;
+    padding-top: 0.65rem;
+}
+
+.skip-link:focus {
+    border: 2px solid var(--ui-border);
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+}
+
+kbd {
+    display: inline-block;
+    border: 1px solid var(--ui-border);
+    border-radius: 0.3rem;
+    background: var(--ui-surface-muted);
+    padding: 0.1rem 0.4rem;
+    font: inherit;
+    font-weight: 700;
+}
+
+[data-repeat-group] > [data-repeat-row] {
+    min-width: 0;
+}
+
+main,
+section,
+article,
+fieldset,
+label {
+    min-width: 0;
+}
+
+body {
+    overflow-wrap: anywhere;
+}
+
+dialog {
+    max-width: min(42rem, calc(100vw - 2rem));
+    max-height: min(85vh, 48rem);
+    overflow: auto;
+    border: 2px solid var(--ui-border);
+    border-radius: 1rem;
+    background: var(--ui-surface);
+    color: var(--ui-foreground);
+    padding: 1.25rem;
+}
+
+dialog::backdrop {
+    background: var(--dialog-backdrop);
+}
+
+.visually-hidden:not(:focus, :active),
+.sr-only:not(:focus, :active) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
+
+[data-inline-error] {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--ui-danger);
+    font-weight: 600;
+}
+
+[aria-invalid="true"] {
+    border-color: var(--ui-danger);
+}
+
+[data-toast] {
+    position: fixed;
+    inset-inline: 1rem;
+    bottom: 1rem;
+    z-index: 60;
+    max-width: 42rem;
+    margin-inline: auto;
+}
+
+@media (max-width: 520px) {
+    .stepper {
+        grid-template-columns: 1fr;
+    }
+
+    .step-item {
+        min-height: 2.75rem;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -6,6 +6,30 @@ use Tests\TestCase;
 
 class HciTrackerTest extends TestCase
 {
+    public function test_documented_personas_and_core_tasks_cover_target_users(): void
+    {
+        $needs = file_get_contents(base_path('docs/USERS_AND_NEEDS.md'));
+        $this->assertIsString($needs);
+        foreach (['Student', 'Freelancer', 'Job seeker', 'Primary tasks'] as $term) {
+            $this->assertStringContainsString($term, $needs);
+        }
+    }
+
+    public function test_user_research_assumptions_are_labeled_as_unvalidated(): void
+    {
+        $needs = file_get_contents(base_path('docs/USERS_AND_NEEDS.md'));
+        $this->assertStringContainsString('These are design assumptions, not findings from real user research.', $needs);
+        $this->assertStringContainsString('Assumptions to validate', $needs);
+    }
+
+    public function test_iteration_log_records_evaluation_findings_and_design_changes(): void
+    {
+        $needs = file_get_contents(base_path('docs/USERS_AND_NEEDS.md'));
+        $this->assertStringContainsString('Iteration log (R3)', $needs);
+        $this->assertStringContainsString('tests/e2e/portfolio-accessibility.spec.js::keyboard-first', $needs);
+        $this->assertStringContainsString('omit CSRF/method fields', $needs);
+    }
+
     public function test_tracker_contains_every_required_principle_and_only_existing_paths(): void
     {
         $tracker = file_get_contents(base_path('docs/HCI_TRACKER.md'));

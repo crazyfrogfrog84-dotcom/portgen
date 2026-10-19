@@ -41,7 +41,8 @@ class PortfolioRoutesTest extends TestCase
         $response = $this->post(route('portfolios.store'), $this->validPortfolioData());
         $portfolio = Portfolio::query()->firstOrFail();
 
-        $response->assertRedirect(route('portfolio.select-template', ['portfolio' => $portfolio]));
+        $response->assertRedirect();
+        $this->assertTrue(URL::hasValidSignature(request()->create($response->headers->get('Location'))));
         $this->assertSame(1, Portfolio::count());
         $this->assertNotEmpty(session('ownerManageUrl'));
         $this->assertTrue(URL::hasValidSignature(request()->create(session('ownerManageUrl'))));
@@ -74,7 +75,7 @@ class PortfolioRoutesTest extends TestCase
             ->assertDontSee('Save your private manage link');
 
         $portfolio = Portfolio::query()->firstOrFail();
-        $saveResponse = $this->post(route('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Modern']);
+        $saveResponse = $this->post(URL::signedRoute('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Modern']);
 
         $saveResponse->assertRedirect(route('portfolio.show', ['portfolio' => $portfolio]));
         $this->get($saveResponse->headers->get('Location'))
@@ -86,11 +87,25 @@ class PortfolioRoutesTest extends TestCase
         $this->assertSame('Modern', $portfolio->fresh()->template_choice);
     }
 
+    public function test_template_back_link_returns_to_the_signed_edit_form_with_saved_values(): void
+    {
+        $portfolio = Portfolio::factory()->create(['full_name' => 'Avery Back Link']);
+        $editUrl = URL::signedRoute('manage.edit', ['portfolio' => $portfolio]);
+        $selectUrl = URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio]);
+
+        $this->withSession(['ownerManageUrl' => URL::signedRoute('manage.show', ['portfolio' => $portfolio])])
+            ->get($selectUrl)
+            ->assertOk()
+            ->assertSee('href="'.e($editUrl).'" data-step-back', false);
+
+        $this->get($editUrl)->assertOk()->assertSee('value="Avery Back Link"', false);
+    }
+
     public function test_template_choice_is_limited_to_the_three_supported_values(): void
     {
         $portfolio = Portfolio::factory()->create();
 
-        $this->postJson(route('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Custom'])
+        $this->postJson(URL::signedRoute('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Custom'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['template_choice']);
 
@@ -109,12 +124,52 @@ class PortfolioRoutesTest extends TestCase
             ->assertDontSee('Copy private link');
     }
 
-    public function test_a_portfolio_without_a_template_returns_to_template_selection(): void
+    public function test_public_template_escapes_user_supplied_markup(): void
+    {
+        $portfolio = Portfolio::factory()->withTemplate('Simple')->create([
+            'full_name' => '<script>alert(1)</script>',
+            'about_me' => '<img src=x onerror=alert(1)>',
+            'projects' => [['name' => '<b>Injected</b>', 'description' => 'Safe text', 'url' => 'https://example.test']],
+        ]);
+
+        $response = $this->get(route('portfolio.show', ['portfolio' => $portfolio]))->assertOk();
+        $response->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)
+            ->assertSee('&lt;img src=x onerror=alert(1)&gt;', false)
+            ->assertSee('&lt;b&gt;Injected&lt;/b&gt;', false)
+            ->assertDontSee('<script>alert(1)</script>', false)
+            ->assertDontSee('<img src=x onerror=alert(1)>', false);
+    }
+
+    public function test_a_portfolio_without_a_template_is_not_publicly_visible(): void
     {
         $portfolio = Portfolio::factory()->create();
 
         $this->get(route('portfolio.show', ['portfolio' => $portfolio]))
-            ->assertRedirect(route('portfolio.select-template', ['portfolio' => $portfolio]));
+            ->assertNotFound();
+    }
+
+    public function test_template_selection_and_saving_require_signed_urls(): void
+    {
+        $portfolio = Portfolio::factory()->create();
+
+        $this->get(route('portfolio.select-template', ['portfolio' => $portfolio]))->assertForbidden();
+        $this->post(route('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Simple'])->assertForbidden();
+    }
+
+    public function test_owner_can_change_template_from_the_signed_management_flow(): void
+    {
+        $portfolio = Portfolio::factory()->withTemplate('Simple')->create();
+        $this->get(URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio, 'from_manage' => 1]))
+            ->assertOk()
+            ->assertSee('Choose the look that fits your work');
+
+        $response = $this->post(
+            URL::signedRoute('portfolio.save-template', ['portfolio' => $portfolio, 'from_manage' => 1]),
+            ['template_choice' => 'Creative']
+        );
+
+        $response->assertRedirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]));
+        $this->assertSame('Creative', $portfolio->fresh()->template_choice);
     }
 
     public function test_signed_manage_link_opens_and_unsigned_link_is_forbidden(): void
