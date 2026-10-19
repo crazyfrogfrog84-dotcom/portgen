@@ -49,6 +49,6 @@ The school-style system paper is available as [`docs/SYSTEM_DOCUMENTATION.md`](d
 
 ## Deployment status
 
-The Render deployment uses `Dockerfile`, `docker/start.sh`, and `render.yaml`. The service listens on Render's `PORT`, uses Render PostgreSQL for database-backed sessions and cache, and runs additive migrations and the fictional demo seeder at startup. Render generates `APP_KEY` and binds the database connection without storing credentials in Git. The Free database expires after 30 days; upgrade it within the following 14-day grace period to keep its data.
+The Render deployment uses `Dockerfile`, `docker/start.sh`, and `render.yaml`. The service listens on Render's `PORT`, uses Render PostgreSQL for database-backed sessions and cache, and runs additive migrations and the fictional demo seeder at startup. A Laravel-compatible `APP_KEY` is stored as a Render secret, and the database connection is bound without storing credentials in Git. The Free database expires after 30 days; upgrade it within the following 14-day grace period to keep its data.
 
 The public source repository is [crazyfrogfrog84-dotcom/portgen](https://github.com/crazyfrogfrog84-dotcom/portgen). The deployment branch is `codex/render-deployment`; the expected public URL is `https://portgen-m1uh.onrender.com`, pending Render creation and health checks. The Laravel framework was upgraded to 12.70.0 after Laravel 11's security-fix window ended; `composer audit --locked` now passes.

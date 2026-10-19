@@ -528,7 +528,7 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 | Variable | Value source |
 |---|---|
 | `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE` | Render production environment; production, false, and Asia/Taipei. |
-| `APP_KEY` | Generated and retained by Render. |
+| `APP_KEY` | Laravel-compatible base64-encoded key stored as a Render secret. |
 | `APP_URL` | Render's assigned HTTPS URL, referenced from `RENDER_EXTERNAL_URL`. |
 | `DB_CONNECTION` | `pgsql`. |
 | `DB_URL` | Render Postgres private connection string supplied through the Blueprint. |
@@ -542,7 +542,7 @@ Render's Blueprint supplies the generated Postgres connection string without com
 
 The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`, and the deployment branch is pushed as `codex/render-deployment`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; neither resource has been created yet. The latest branch CI run is pending. The live URL and health checks remain unverified.
 
-Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. Render generates `APP_KEY` and binds the database connection through the Blueprint. Publication still depends on passing the CI gate, creating the free database and web service, then passing the additive migration and live smoke checks. No production database migration has been attempted. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
+Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. The Render service requires a Laravel-compatible `APP_KEY` stored as a secret and binds the database connection through the Blueprint. Publication still depends on passing the CI gate, creating the free database and web service, then passing the additive migration and live smoke checks. No production database migration has been attempted. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
 
 ## 9. Testing and technical achievements
 
