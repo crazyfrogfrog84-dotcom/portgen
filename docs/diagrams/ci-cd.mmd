@@ -1,10 +1,9 @@
-flowchart LR
+flowchart TB
     subgraph ci[GitHub Actions CI]
-        direction TB
-        commit[Commit or pull request] --> scan[Secret scan] --> php[PHP 8.3 and PostgreSQL 16] --> assets[Node 24 build and audit] --> browser[Playwright and axe] --> artifact[HCI artifacts]
+        direction LR
+        commit[Commit or pull request] --> gates[Secret and dependency scans, PHP 8.3 and PostgreSQL tests, Pint, HCI release checks, Node 24 build, Playwright and axe]
     end
-    subgraph deployment[Render release]
-        direction TB
-        web[Render Docker service] --> migrate[Additive migrations and demo seed] --> health[GET /up] --> smoke[Smoke form and public demo]
+    subgraph deployment[Render production release]
+        direction LR
+        build[After CI passes: build Render Docker image] --> production[Deploy portgen-m1uh, run additive migration and seed, GET /up and smoke form and public portfolio]
     end
-    artifact -->|Checks pass| web

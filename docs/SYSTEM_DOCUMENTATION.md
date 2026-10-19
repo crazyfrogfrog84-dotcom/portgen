@@ -14,7 +14,7 @@
 
 **Version:** 0.1.0
 
-PortGen is a Laravel application for building and publishing a personal portfolio from one structured form. This paper documents the implemented system, the evidence gathered from automated checks and expert inspection, and the current deployment limit. The code, local screenshots, and design decisions are available in this repository. No classmates have taken part in the usability study yet, and there is no live deployment.
+PortGen is a Laravel application for building and publishing a personal portfolio from one structured form. This paper documents the implemented system, the evidence gathered from automated checks and expert inspection, and the Render deployment plan. The public source repository contains the application, design records, and HCI evidence. No classmates have taken part in the usability study yet.
 
 ## 1. System overview
 
@@ -32,9 +32,9 @@ Students and early-career professionals often have information spread across doc
 
 ### 1.3 Scope and limits
 
-The implementation includes portfolio creation, template selection, public viewing, signed-link management, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker/Render deployment configuration. It does not include accounts, password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
+The implementation includes portfolio creation, template selection, public viewing, signed-link management, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment configuration for Render. It does not include accounts, password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
 
-The deployment is not approved as production-ready. The required Laravel 11 line is past its published security-fix window, and `composer audit --locked` reports four advisories for the locked dependency set, including a medium-severity signed-URL path-confusion advisory. Docker and production database and Render configuration were unavailable in the workspace. The application was not deployed and the PostgreSQL CI workflow was not run from this checkout. See section 8 for the exact release conditions.
+Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set currently passes `composer audit --locked`. The Render container configuration is prepared, but the Render service and a dedicated PortGen Supabase database still need creation. The deployment must run additive migrations before serving traffic. See section 8 for the release configuration and current status.
 
 ## 2. Users and needs
 
@@ -58,7 +58,7 @@ The student path permits empty education and work sections while requiring at le
 
 ### 3.1 Architecture
 
-The browser submits validated portfolio fields to Laravel. The controller and Eloquent model persist structured values in PostgreSQL JSONB columns. Blade renders the public page from the chosen template. A signed URL provides private owner access without an account. A Laravel scheduler in the container permanently removes records after their undo deadline.
+The browser submits validated portfolio fields to Laravel. The controller and Eloquent model persist structured values in PostgreSQL JSONB columns. Blade renders the public page from the chosen template. A signed URL provides private owner access without an account. On Render, the browser's signed purge request and the Laravel scheduler remove a deleted record when its ten-second undo period ends.
 
 <!-- PAGEBREAK -->
 
@@ -66,7 +66,7 @@ The browser submits validated portfolio fields to Laravel. The controller and El
 
 ![Application architecture](diagrams/system-architecture.png)
 
-The user-facing application is a modular Laravel monolith. The controller handles the portfolio workflow, Form Requests validate input, signed middleware protects owner routes, Blade templates render screens, and the database stores portfolio records. The runtime scheduler is supervised alongside Apache by `docker/start.sh`.
+The user-facing application is a modular Laravel monolith. The controller handles the portfolio workflow, Form Requests validate input, signed middleware protects owner routes, Blade templates render screens, and the database stores portfolio records. Render serves the app with Apache and supervises `schedule:work` alongside the web server.
 
 ### 3.2 Technology stack
 
@@ -74,12 +74,12 @@ The user-facing application is a modular Laravel monolith. The controller handle
 
 | Layer | Technology | Use and status |
 |---|---|---|
-| Server framework | Laravel 11, PHP 8.3 target | MVC routing, validation, ORM, migrations, signed URLs, and scheduled commands. The local workstation runs PHP 8.5. |
+| Server framework | Laravel 12.70.0, PHP 8.3 target | MVC routing, validation, ORM, migrations, signed URLs, and scheduled commands. The local workstation runs PHP 8.5. |
 | Views and styling | Blade, Tailwind CSS 4, Vite 8 | Server-rendered views, design tokens, responsive styling, and production asset bundles. |
 | Database | PostgreSQL 16 in CI; Supabase PostgreSQL planned for production | PostgreSQL is configured as a CI service. No production database is connected. Local tests use isolated SQLite. |
 | Browser checks | Playwright 1.64 and axe-core 4.14 | Keyboard journey, responsive screenshots, touch target checks, and accessibility audits. |
-| Container | Docker, PHP 8.3 Apache | Multi-stage image configuration is committed; image build was not run because Docker is unavailable here. |
-| Hosting | Render Blueprint | Web service and health-check configuration are committed; no service was created. |
+| Container | Docker, PHP 8.3 Apache on Render | Multi-stage image configuration is committed; the Render image build runs in GitHub Actions. |
+| Hosting | Render web service with Supabase PostgreSQL | Supabase stores portfolio data, sessions, and cache. |
 | CI | GitHub Actions | Workflow defines PHP, PostgreSQL, build, browser, and HCI artifact steps. It has not run on GitHub. |
 
 **Table 3. Main workflow stages**
@@ -90,7 +90,7 @@ The user-facing application is a modular Laravel monolith. The controller handle
 | 2 | Compare and choose a template | The app previews the user's information and saves the selected supported template through a signed route. |
 | 3 | Publish and share | The app displays the public URL and a private signed management URL with a copy action. |
 | 4 | Edit or change a template | The owner opens the private signed link and updates the same portfolio record. |
-| 5 | Delete or undo | The app soft-deletes the record, allows signed recovery for ten seconds, then purges expired rows on the server schedule. |
+| 5 | Delete or undo | The app soft-deletes the record, allows signed recovery for ten seconds, and sends a signed purge request when the undo period ends. |
 
 ## 4. Database schema and data dictionary
 
@@ -156,7 +156,7 @@ Error preview routes exist only in local and test environments. The production r
 
 Owner management is a bearer-link model. Laravel signed URLs without an expiry protect owner routes; anyone who obtains the private link can manage that portfolio. The completion screen explains the link, shows the public URL separately, and provides a copy control. There is no account-based recovery if the owner loses the private link.
 
-Security middleware adds Content Security Policy, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`. `APP_DEBUG` is set to false in the Render configuration. Production also requires a real `APP_KEY` in the hosting secret store.
+Security middleware adds Content Security Policy, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`. `APP_DEBUG` is set to false in Render production configuration. Production also requires a real `APP_KEY` in the hosting secret store.
 
 ## 6. User interface design and HCI compliance
 
@@ -517,7 +517,7 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 
 ### 8.1 Release configuration
 
-`Dockerfile` uses Composer, Node, and PHP 8.3 Apache stages. The final image installs PostgreSQL support, serves `public/`, reads the platform `PORT`, runs additive migrations and the idempotent demo seed, caches Laravel configuration/routes/views, and supervises Apache with `schedule:work`. `render.yaml` defines a Render Docker web service, `/up` health check, `checksPass` deployment trigger, and environment variable names with secret values supplied out of band. `.github/workflows/smoke.yml` checks a configured live URL after CI.
+`Dockerfile` builds Composer dependencies, Vite assets, and a PHP 8.3 Apache image. `docker/start.sh` binds Apache to Render's `PORT`, applies additive migrations, seeds the fictional demo, and builds Laravel's configuration, route, and view caches. It also supervises the sub-minute scheduler. Render's free plan does not support a pre-deploy command, so migration runs at service startup. Free web services sleep after inactivity and have ephemeral local storage; Supabase PostgreSQL retains application data, sessions, and cache. `.github/workflows/ci.yml` audits PHP dependencies and builds the Render image; `.github/workflows/smoke.yml` checks the configured live URL after CI.
 
 **Figure 37. CI and deployment flow**
 
@@ -527,23 +527,24 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 
 | Variable | Value source |
 |---|---|
-| `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE` | Render Blueprint settings; production, false, and Asia/Taipei. |
-| `APP_KEY` | Generate and store in Render secret environment. |
+| `APP_ENV`, `APP_DEBUG`, `APP_TIMEZONE` | Render production environment; production, false, and Asia/Taipei. |
+| `APP_KEY` | Generate once and store as a Render production secret. |
 | `APP_URL` | HTTPS origin of the deployed Render service. |
 | `DB_CONNECTION`, `DB_PORT`, `DB_DATABASE`, `DB_SSLMODE` | PostgreSQL, 5432, postgres (or configured DB name), and require. |
 | `DB_HOST` | Supabase shared session-pooler host copied from its Connect screen. |
 | `DB_USERNAME` | Supabase session-pooler username, typically `postgres.[PROJECT_REF]`. |
-| `DB_PASSWORD` | Supabase database password stored as a Render secret. |
-| `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION` | File, file, and sync for the single-service configuration. |
+| `DB_PASSWORD` | Supabase database password stored as a Render production secret. |
+| `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION` | Database, database, and sync for the stateless container. |
+| `LOG_CHANNEL`, `SESSION_SECURE_COOKIE` | stderr and true for runtime logs and HTTPS session cookies. |
 | `PORTGEN_LIVE_URL` | GitHub repository variable for the smoke workflow, set only after a real deployment. |
 
-Supabase session pooler connectivity is configured for port 5432 and SSL mode `require`. Production migrations must be additive; `migrate:fresh` and `db:wipe` are reserved for the isolated CI database. The local test guard refuses a Supabase host. The project currently has no production database configuration in this checkout.
+Supabase session pooler connectivity uses port 5432 and SSL mode `require`. Production migrations must be additive; `migrate:fresh` and `db:wipe` are reserved for the isolated CI database. The local test guard refuses a Supabase host. Render's free instances have ephemeral local storage, so the session and cache tables share state through PostgreSQL. The Render dashboard receives secret values; the repository contains only variable names.
 
 ### 8.2 Deployment status and blockers
 
-The GitHub and Supabase browser sessions are signed into the account whose name begins with `crazyfrog`, but this checkout has no Git remote, GitHub CLI, Docker, Render API key, Supabase database host, username, or password. The local `portgen-secrets.env` file is absent. The visible Supabase organization already contains another project; it was not modified. No PortGen Supabase project or Render service was created.
+The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`; `main` and the eight phase branches are present. The deployment changes are prepared locally on `codex/render-deployment` but are not yet pushed. The Supabase organization contains the existing `StuDyIo Project`, which was not modified. No PortGen database has been created. The requested Render service name is `portgen-m1uh`; its live URL and production environment are pending service creation.
 
-Laravel's published release table shows that Laravel 11 security fixes ended on 2026-03-12. The framework remains Laravel 11 because the approved brief fixes that stack. Composer reports four advisories for the current framework dependency. Therefore no public deployment or production database migration was performed. Resolve the framework support issue, then provide the service configuration and run the PostgreSQL CI, Docker build, Render deploy, and live smoke workflow.
+Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. The Render container configuration is ready, but publication still depends on connecting the deployment branch, creating a dedicated Supabase database, configuring production secrets, and running the additive production migration. No production database migration has been attempted. The public source repository is separate from the still-pending live application.
 
 ## 9. Testing and technical achievements
 
@@ -560,9 +561,9 @@ Laravel's published release table shows that Laravel 11 security fixes ended on 
 | `npm run test:e2e` | 1 Playwright test passed; captured 17 states at mobile and desktop sizes. |
 | `php artisan schedule:list` | Shows `portfolios:purge-expired` every ten seconds. |
 | `HCI_RELEASE=1 php artisan test --compact` | Exit code 0; 657 assertions; the tracker release requirement passes. PHP 8.5 reports 37 deprecation-marked tests and 1 passing test in the compact summary. |
-| `composer audit --locked` | Exit code 1; four Laravel framework advisories found, including a medium-severity signed-URL path-confusion advisory. |
+| `composer audit --locked` | Exit code 0; no security vulnerability advisories found after upgrading to Laravel 12.70.0. |
 
-The workstation uses PHP 8.5, not the required PHP 8.3 runtime, so PHPUnit reports deprecations. CI is configured to use PHP 8.3 and PostgreSQL 16. PostgreSQL migration rollback/reapply, CI, and a Docker image build were not run here.
+The workstation uses PHP 8.5, not the required PHP 8.3 runtime, so PHPUnit reports deprecations. CI is configured to use PHP 8.3 and PostgreSQL 16 and to build the Render image. PostgreSQL migration rollback/reapply, GitHub CI for this branch, and the container image build remain pending.
 
 ### 9.2 Database, browser, and security checks
 
@@ -608,9 +609,9 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 
 ### 11.2 Future work
 
-- Upgrade from Laravel 11 to a supported framework release while preserving behavior and retesting dependencies.
-- Connect the repository to GitHub and run the CI workflow against PostgreSQL 16.
-- Build the Docker image, configure a new PortGen database and Render service, then pass live smoke checks.
+- Keep Laravel 12 dependencies patched and plan the Laravel 13 upgrade before Laravel 12's security-fix date.
+- Create the Render service `portgen-m1uh` under the crazyfrog account and record the live URL after the first healthy deploy.
+- Create a dedicated PortGen Supabase project, set production secrets, apply additive migrations, and pass live smoke checks.
 - Conduct the five-task classmate study and add real observation and SUS results.
 - Consider profile photos and project images only after launch readiness; validate type, size, alt text, preview, storage, and deletion flows.
 - Evaluate skill-logo suggestions with an explicit text fallback and no dependency on color or imagery.
@@ -623,7 +624,8 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 
 | Date | Decision | Reason |
 | --- | --- | --- |
-| 2026-10-19 | Keep Laravel 11 as the implementation target because the approved product brief fixes that stack; use the latest 11.x line available from Composer. | Changing the framework major would conflict with the explicit stack requirement. Composer's current security policy blocked normal dependency resolution, so the scaffold was installed with `--no-security-blocking`; Composer reported four advisories affecting `laravel/framework`. Laravel's published support table ends Laravel 11 security fixes on 2026-03-12. Treat production deployment as blocked until the framework is upgraded or the risk is explicitly resolved; do not represent this stack as production-safe. |
+| 2026-10-19 | Initially retain Laravel 11 to match the fixed stack in the brief; later superseded by the security upgrade decision below. | The framework's security-fix window had ended and Composer reported four advisories, so the initial decision was changed before deployment. |
+| 2026-10-19 | Upgrade Laravel 11 to Laravel 12.70.0 and PHPUnit 11 before deployment. | Laravel 11's security-fix window ended on 2026-03-12 and the locked framework had four advisories. The official upgrade guide describes Laravel 12 as a low-impact update; the patched release removes the current Composer advisories while retaining PHP 8.3 compatibility. |
 | 2026-10-19 | Set Composer's platform PHP version to 8.3. | The required CI and production runtime are PHP 8.3, while the workstation currently runs PHP 8.5. This keeps dependency resolution compatible with the requested runtime. |
 | 2026-10-19 | Use Tailwind CSS 4 through its official Vite plugin and use Playwright with axe-core for browser checks. | These match the required build and browser-testing stack; the packages are dev dependencies and are needed for the requested UI and accessibility gates. |
 | 2026-10-19 | Upgrade Vite and `laravel-vite-plugin` to versions compatible with Node 24 and Vite 8 after npm audit found vulnerable esbuild/Vite dependencies. | The existing Laravel 11 skeleton pinned Vite 5, which produced moderate and high npm audit findings. The current Laravel Vite plugin supports Vite 8; the updated dependency tree reports zero npm vulnerabilities. |
@@ -631,10 +633,12 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 | 2026-10-19 | Use a deterministic fictional public demo slug (`portgen001`) and an idempotent seeder for the live smoke check. | The deployment smoke workflow needs a stable public URL to verify that migrations, seeding, and public rendering work together without using real user data. |
 | 2026-10-19 | Keep local error-preview routes available only in `local` and `testing` environments. | Playwright needs to inspect every friendly server-error screen, while production should expose only application routes. |
 | 2026-10-19 | Run local Playwright with a dedicated temporary SQLite file and reserve PostgreSQL browser tests for the isolated CI service. | This machine has no Docker, PostgreSQL server, or GitHub runner access. The browser setup overrides DB connection settings and refuses a PostgreSQL target unless it is explicitly marked as the local `portgen_test` service. |
-| 2026-10-19 | Do not deploy the Laravel 11 dependency set while its security support window is closed. | The required stack fixes Laravel 11, but its published security-fix date has passed and Composer reports four advisories. The deployment files are prepared, but a live service is not claimed safe. |
+| 2026-10-19 | Use Render's Docker web service with Apache as the primary host. | The requested deployment target is Render; its Docker runtime supports the committed Apache image and uses the standard `PORT` variable. Supabase PostgreSQL stores persistent data, sessions, and cache. |
+| 2026-10-19 | Name the requested Render service `portgen-m1uh` and deploy the `codex/render-deployment` branch after its CI checks pass. | This matches the requested live URL slug and keeps the public service on a branch with CI checks before it is promoted to `main`. |
+| 2026-10-19 | Keep Laravel's ten-second deletion undo and run its scheduler in the Render container. | The owner may close the browser during the undo window; Laravel's `schedule:work` performs cleanup while the service is running, and the signed browser purge provides request-driven cleanup. |
 | 2026-10-19 | Use SQLite in memory only for the initial scaffold checks; use the dedicated local Postgres 16 service for application database tests and CI. | This avoids any accidental connection to production and allows the scaffold gate to run before a Docker service is available. |
 | 2026-10-19 | Run the required Postgres 16 migration, rollback, and feature gates in the CI service; run only SQLite-backed migration/model tests on this workstation. | Docker, `psql`, and a local PostgreSQL service are absent, and the current Windows account cannot install a PostgreSQL service. The CI job declares its own ephemeral Postgres 16 service. Local SQLite results do not count as the Postgres gate. |
-| 2026-10-19 | Run expired portfolio cleanup every ten seconds and supervise Laravel's scheduler with Apache in the container. | The required ten-second undo period must also finish when an owner closes the browser. Laravel supports sub-minute schedules through `schedule:work`; a test covers the purge command and schedule entry. |
+| 2026-10-19 | Run expired portfolio cleanup every ten seconds in the Render container. | The required ten-second undo period must also finish when an owner closes the browser. Laravel supports sub-minute schedules through `schedule:work`; the signed purge request also completes cleanup when the owner remains on the page. |
 | 2026-10-19 | Keep the usability study kit open for classmates and report no participant scores until sessions have been run. | The implementation has expert inspection and automated checks, but no real participant data. Blank observation and results fields prevent fabricated findings. |
 | 2026-10-19 | Store Mermaid source and a neutral theme configuration next to rendered diagrams and use the diagrams in the system paper. | Source files keep architecture, data, and release flow editable; rendered PNGs allow diagrams to be embedded in the DOCX and PDF. Mermaid CLI is used only as an authoring tool and is not added to application dependencies. |
 
@@ -661,10 +665,11 @@ Never point test commands or `migrate:fresh` at Supabase. For a supported public
 5. Center for Universal Design, North Carolina State University. *The Principles of Universal Design*, version 2.0, 1997. [NC State College of Design](https://design.ncsu.edu/research/center-for-universal-design/).
 6. World Wide Web Consortium. *Web Content Accessibility Guidelines (WCAG) 2.2*, Recommendation, 2023. [W3C Recommendation](https://www.w3.org/TR/WCAG22/).
 7. University of Delaware Library. “Color Schemes.” [Graphic Design Research Guide](https://guides.lib.udel.edu/design/color).
-8. Laravel. “Laravel 11.x Task Scheduling.” [Official documentation](https://laravel.com/framework/docs/11.x/scheduling).
+8. Laravel. “Laravel 12.x Task Scheduling.” [Official documentation](https://laravel.com/framework/docs/12.x/scheduling).
 9. Laravel. “Release Notes.” [Official framework support table](https://laravel.com/framework/docs/12.x/releases).
 10. Render. “Blueprint Specification Reference.” [Official documentation](https://render.com/docs/blueprint-spec).
 11. Supabase. “Connect to Postgres.” [Official documentation](https://supabase.com/docs/guides/database/connecting-to-postgres).
+12. Render. “Docker on Render.” [Official documentation](https://render.com/docs/docker).
 
 <!-- LANDSCAPE_START -->
 ### Appendix D. HCI tracker copy

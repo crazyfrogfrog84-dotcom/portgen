@@ -43,12 +43,16 @@ jobs:
         run: php scripts/check-secrets.php --worktree
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
+      - name: Audit PHP dependencies
+        run: composer audit --locked
       - name: Run Pint
         run: ./vendor/bin/pint --test
       - name: Install Node dependencies
         run: npm ci
       - name: Build assets
         run: npm run build
+      - name: Build Render container image
+        run: docker build --tag portgen-render:ci .
       - name: Verify PostgreSQL migrations and rollback
         env:
           APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
@@ -65,6 +69,7 @@ jobs:
       - name: Run PHP tests on PostgreSQL
         env:
           APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          HCI_RELEASE: '1'
           DB_CONNECTION: pgsql
           DB_HOST: 127.0.0.1
           DB_PORT: 5432

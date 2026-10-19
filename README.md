@@ -4,7 +4,7 @@ PortGen is a responsive portfolio generator for students, freelancers, and job s
 
 ## Stack
 
-Laravel 11, PHP 8.3, Blade, Tailwind CSS 4, Vite 8, PostgreSQL 16, Playwright, and axe-core. Production configuration targets a Supabase shared session pooler on port 5432 and a Render Docker web service.
+Laravel 12, PHP 8.3, Blade, Tailwind CSS 4, Vite 8, PostgreSQL 16, Playwright, and axe-core. Production configuration targets a Supabase shared session pooler on port 5432 and a Render Docker web service running Apache.
 
 ## Run locally
 
@@ -49,6 +49,6 @@ The school-style system paper is available as [`docs/SYSTEM_DOCUMENTATION.md`](d
 
 ## Deployment status
 
-Deployment files are included in `Dockerfile`, `render.yaml`, and `.github/workflows/smoke.yml`. When a deployment is configured, set the Render environment variables named in `render.yaml` and the GitHub repository variable `PORTGEN_LIVE_URL`. Supabase session-pooler values belong in the Render dashboard, not in this repository.
+The Render deployment uses `Dockerfile`, `docker/start.sh`, and `render.yaml`. The service listens on Render's `PORT`, uses Supabase PostgreSQL for database-backed sessions and cache, and runs additive migrations and the fictional demo seeder at startup. Never commit database credentials or `APP_KEY`; store them in Render's secret environment.
 
-Production deployment is currently blocked. Laravel's published policy ended Laravel 11 security fixes on 2026-03-12, and `composer audit --locked` reports four advisories for Laravel 11.57.0, including a medium-severity signed-URL path-confusion advisory. The project keeps Laravel 11 because the product brief fixes that major version; do not deploy this dependency set as production-safe. A reachable Git remote, GitHub CI run, Render service, and live smoke run also remain unavailable in this workspace.
+The public source repository is [crazyfrogfrog84-dotcom/portgen](https://github.com/crazyfrogfrog84-dotcom/portgen). The requested Render service name is `portgen-m1uh`; the public URL will be recorded after Render creates and verifies it. The Laravel framework was upgraded to 12.70.0 after Laravel 11's security-fix window ended; `composer audit --locked` now passes. A dedicated Supabase database and production smoke check are still required.
