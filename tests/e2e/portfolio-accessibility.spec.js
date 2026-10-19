@@ -151,6 +151,16 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
         await expect(page.locator('article.theme-modern')).toBeVisible();
         await auditAndCapture(page, view, 'template-modern');
 
+        await test.step('public theme choice persists after reload', async () => {
+            const modernPortfolio = page.locator('[data-template="modern"]');
+            await modernPortfolio.locator('input[name="portfolio-theme"][value="dark"]').check();
+            await expect(modernPortfolio).toHaveAttribute('data-theme', 'dark');
+            expect(await page.evaluate(() => localStorage.getItem('portgen:theme'))).toBe('dark');
+            await page.reload();
+            await expect(page.locator('[data-template="modern"]')).toHaveAttribute('data-theme', 'dark');
+            await page.locator('[data-template="modern"] input[name="portfolio-theme"][value="system"]').check();
+        });
+
         await page.goto(manageUrl);
         await expect(page.getByRole('heading', { name: /Manage portfolio for/ })).toBeVisible();
         await auditAndCapture(page, view, 'manage');
@@ -211,7 +221,21 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
 
         await page.emulateMedia({ colorScheme: 'dark' });
         await page.goto(publicUrl);
-        await expect(page.locator('.theme-creative')).toHaveCSS('background-color', 'rgb(30, 19, 32)');
+        const creativeDarkPalette = await page.locator('.theme-creative').evaluate((element) => {
+            const probe = document.createElement('span');
+            probe.style.backgroundColor = 'var(--bg)';
+            element.append(probe);
+            const tokenBackground = getComputedStyle(probe).backgroundColor;
+            probe.remove();
+
+            return {
+                theme: element.dataset.theme,
+                background: getComputedStyle(element).backgroundColor,
+                tokenBackground,
+            };
+        });
+        expect(creativeDarkPalette.theme).toBe('system');
+        expect(creativeDarkPalette.background).toBe(creativeDarkPalette.tokenBackground);
         await auditAndCapture(page, view, 'dark-mode-creative');
         await page.emulateMedia({ colorScheme: 'light' });
     }
