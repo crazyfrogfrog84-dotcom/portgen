@@ -16,6 +16,11 @@ class PortfolioFactory extends Factory
             'full_name' => fake()->name(),
             'headline' => fake()->jobTitle(),
             'about_me' => fake()->paragraph(),
+            'location' => fake()->city().', '.fake()->country(),
+            'availability' => null,
+            'contact_email' => fake()->safeEmail(),
+            'motto' => null,
+            'interests' => [fake()->word(), fake()->word()],
             'education' => [
                 ['institution' => fake()->company().' University', 'qualification' => 'Bachelor of Arts', 'year' => (string) fake()->year()],
             ],
@@ -24,7 +29,7 @@ class PortfolioFactory extends Factory
             ],
             'skills' => [fake()->word(), fake()->word(), fake()->word()],
             'projects' => [
-                ['name' => fake()->catchPhrase(), 'description' => fake()->sentence(), 'url' => fake()->url()],
+                ['name' => fake()->catchPhrase(), 'description' => fake()->sentence(), 'url' => fake()->url(), 'tags' => [fake()->word(), fake()->word()]],
             ],
             'social_links' => [
                 ['label' => 'LinkedIn', 'url' => 'https://www.linkedin.com/in/'.fake()->userName()],

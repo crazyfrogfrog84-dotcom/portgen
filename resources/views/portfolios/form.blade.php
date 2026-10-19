@@ -4,13 +4,15 @@
     $skillRows = old('skills', $portfolio?->skills ?: ['']);
     $projectRows = old('projects', $portfolio?->projects ?: [['name' => '', 'description' => '', 'url' => '']]);
     $linkRows = old('social_links', $portfolio?->social_links ?: [['label' => '', 'url' => '']]);
+    $profileImage = $portfolio?->images?->firstWhere('kind', 'profile');
 @endphp
 
-<form method="POST" action="{{ $action }}" class="space-y-4" data-portfolio-form @if ($formMethod === 'POST') data-draft-form data-draft-key="portgen:portfolio-draft" @endif>
+<form method="POST" action="{{ $action }}" enctype="multipart/form-data" class="space-y-4" data-portfolio-form @if ($formMethod === 'POST') data-draft-form data-draft-key="portgen:portfolio-draft" @endif>
     @csrf
     @if ($formMethod === 'PUT')
         @method('PUT')
     @endif
+    <input type="hidden" name="project_image_controls_present" value="1">
 
     @if ($formMethod === 'POST')
         <p class="status-neutral" role="status" aria-live="polite" data-draft-status>Drafts save on this device while you type.</p>
@@ -42,12 +44,37 @@
                 <input id="headline" name="headline" value="{{ old('headline', $portfolio?->headline) }}" required maxlength="180" data-error-message="Add a short headline." aria-describedby="headline-hint @error('headline') headline-error @enderror" @error('headline') aria-invalid="true" @enderror class="form-control mt-1">
                 @error('headline')<p id="headline-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror
             </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+                <div><label for="location" class="block font-medium">Location <span class="font-normal">(optional)</span></label><p id="location-hint" class="text-muted text-sm">Example: Taipei, Taiwan.</p><input id="location" name="location" value="{{ old('location', $portfolio?->location) }}" maxlength="120" aria-describedby="location-hint" class="form-control mt-1"></div>
+                <div><label for="availability" class="block font-medium">Availability <span class="font-normal">(optional)</span></label><p id="availability-hint" class="text-muted text-sm">Example: Open to internships.</p><input id="availability" name="availability" value="{{ old('availability', $portfolio?->availability) }}" maxlength="80" aria-describedby="availability-hint" class="form-control mt-1"></div>
+            </div>
+            <div><label for="contact_email" class="block font-medium">Contact email <span class="font-normal">(optional)</span></label><p id="contact_email-hint" class="text-muted text-sm">This address will be visible on your public portfolio. Example: name@example.com.</p><input id="contact_email" name="contact_email" type="email" value="{{ old('contact_email', $portfolio?->contact_email) }}" maxlength="190" autocomplete="email" aria-describedby="contact_email-hint @error('contact_email') contact_email-error @enderror" @error('contact_email') aria-invalid="true" @enderror class="form-control mt-1">@error('contact_email')<p id="contact_email-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
             <div>
                 <label for="about_me" class="block font-medium">About me</label>
                 <p id="about_me-hint" class="text-muted text-sm">Share what you do and the kind of work you enjoy.</p>
                 <textarea id="about_me" name="about_me" rows="5" required maxlength="2000" data-error-message="Add a short introduction." aria-describedby="about_me-hint @error('about_me') about_me-error @enderror" @error('about_me') aria-invalid="true" @enderror class="form-control mt-1">{{ old('about_me', $portfolio?->about_me) }}</textarea>
                 @error('about_me')<p id="about_me-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror
             </div>
+        </div>
+    </details>
+
+    <details class="form-section" data-section data-section-optional>
+        <summary><span>Photo <span class="font-normal">(optional)</span></span><span class="section-completion" data-section-completion>Optional</span></summary>
+        <div class="section-body">
+            <p class="text-muted text-sm">A clear portrait works well. JPEG, PNG, or WebP, up to 2 MB. This photo will be public on your portfolio.</p>
+            @if ($profileImage)<img class="pf-avatar" src="{{ route('portfolio.image', ['portfolio' => $portfolio, 'image' => $profileImage]) }}" alt="{{ $profileImage->alt }}" width="{{ $profileImage->width }}" height="{{ $profileImage->height }}">@endif
+            <div><label for="profile_image" class="block font-medium">Upload profile photo</label><input id="profile_image" name="profile_image" type="file" accept="image/jpeg,image/png,image/webp" class="form-control mt-1">@error('profile_image')<p class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
+            <div><label for="profile_image_alt" class="block font-medium">Photo description (alt text)</label><p id="profile_image_alt-hint" class="text-muted text-sm">Describe what the photo shows. Example: Photo of {{ old('full_name', $portfolio?->full_name ?: 'your name') }}.</p><input id="profile_image_alt" name="profile_image_alt" value="{{ old('profile_image_alt', $profileImage?->alt ?? ('Photo of '.old('full_name', $portfolio?->full_name ?: 'your name'))) }}" maxlength="200" aria-describedby="profile_image_alt-hint @error('profile_image_alt') profile_image_alt-error @enderror" @error('profile_image_alt') aria-invalid="true" @enderror class="form-control mt-1">@error('profile_image_alt')<p id="profile_image_alt-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
+            @if ($profileImage)<label class="inline-flex min-h-11 items-center gap-2"><input type="checkbox" name="profile_image_remove" value="1"> Remove the current profile photo</label>@endif
+        </div>
+    </details>
+
+    <details class="form-section" data-section data-section-optional>
+        <summary><span>Interests <span class="font-normal">(optional)</span></span><span class="section-completion" data-section-completion>Optional</span></summary>
+        <div class="section-body">
+            <label for="interests_input" class="block font-medium">Interests</label><p id="interests-hint" class="text-muted text-sm">List up to 8 interests separated by commas. Example: Coding, hiking, music.</p>
+            <input id="interests_input" name="interests_input" value="{{ old('interests_input', implode(', ', old('interests', $portfolio?->interests ?? []))) }}" maxlength="334" aria-describedby="interests-hint @error('interests_input') interests-error @enderror" class="form-control mt-1">
+            @error('interests_input')<p id="interests-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror
         </div>
     </details>
 
@@ -153,6 +180,12 @@
                         <div><label for="project-{{ $index }}-name" class="block font-medium">Project name</label><input id="project-{{ $index }}-name" name="projects[{{ $index }}][name]" value="{{ $project['name'] ?? '' }}" maxlength="120" class="form-control mt-1"></div>
                         <div><label for="project-{{ $index }}-description" class="block font-medium">Description</label><textarea id="project-{{ $index }}-description" name="projects[{{ $index }}][description]" rows="3" maxlength="2000" class="form-control mt-1">{{ $project['description'] ?? '' }}</textarea></div>
                         <div><label for="project-{{ $index }}-url" class="block font-medium">Project link</label><input id="project-{{ $index }}-url" type="url" name="projects[{{ $index }}][url]" value="{{ $project['url'] ?? '' }}" maxlength="2048" data-http-url data-error-message="Use a complete http or https project link." placeholder="https://example.com" class="form-control mt-1"></div>
+                        <div><label for="project-{{ $index }}-tags" class="block font-medium">Technology tags <span class="font-normal">(optional)</span></label><p id="project-{{ $index }}-tags-hint" class="text-muted text-sm">Up to 8, separated by commas. Example: Laravel, PostgreSQL.</p><input id="project-{{ $index }}-tags" name="projects[{{ $index }}][tags_input]" value="{{ old("projects.{$index}.tags_input", implode(', ', $project['tags'] ?? [])) }}" maxlength="254" aria-describedby="project-{{ $index }}-tags-hint @error("projects.{$index}.tags_input") project-{{ $index }}-tags-error @enderror" @error("projects.{$index}.tags_input") aria-invalid="true" @enderror class="form-control mt-1">@error("projects.{$index}.tags_input")<p id="project-{{ $index }}-tags-error" class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
+                        @php($projectImage = $portfolio?->images?->first(fn ($image) => $image->kind === 'project' && (int) $image->project_index === (int) $index))
+                        @if ($projectImage)<img class="pf-project-image" src="{{ route('portfolio.image', ['portfolio' => $portfolio, 'image' => $projectImage]) }}" alt="{{ $projectImage->alt }}" width="{{ $projectImage->width }}" height="{{ $projectImage->height }}"><input type="hidden" name="project_image_ids[{{ $index }}]" value="{{ $projectImage->id }}">@endif
+                        <div><label for="project-{{ $index }}-image" class="block font-medium">Project image <span class="font-normal">(optional)</span></label><p id="project-{{ $index }}-image-hint" class="text-muted text-sm">JPEG, PNG, or WebP, up to 2 MB. This photo will be public on your portfolio.</p><input id="project-{{ $index }}-image" name="project_images[{{ $index }}]" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="project-{{ $index }}-image-hint" class="form-control mt-1">@error("project_images.{$index}")<p class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
+                        <div><label for="project-{{ $index }}-image-alt" class="block font-medium">Project image description (alt text)</label><p id="project-{{ $index }}-image-alt-hint" class="text-muted text-sm">Describe the project image. Example: Preview of {{ $project['name'] ?? 'the project' }}.</p><input id="project-{{ $index }}-image-alt" name="project_image_alts[{{ $index }}]" value="{{ old("project_image_alts.{$index}", $projectImage?->alt ?? '') }}" maxlength="200" aria-describedby="project-{{ $index }}-image-alt-hint" class="form-control mt-1">@error("project_image_alts.{$index}")<p class="mt-1" data-inline-error>{{ $message }}</p>@enderror</div>
+                        @if ($projectImage)<label class="inline-flex min-h-11 items-center gap-2"><input type="checkbox" name="project_image_remove[{{ $index }}]" value="1"> Remove this project image</label>@endif
                         <button class="button-text" type="button" data-remove-row hidden>Remove this project</button>
                     </fieldset>
                 @endforeach
@@ -164,9 +197,19 @@
                     <div><label for="project-__INDEX__-name" class="block font-medium">Project name</label><input id="project-__INDEX__-name" name="projects[__INDEX__][name]" maxlength="120" class="form-control mt-1"></div>
                     <div><label for="project-__INDEX__-description" class="block font-medium">Description</label><textarea id="project-__INDEX__-description" name="projects[__INDEX__][description]" rows="3" maxlength="2000" class="form-control mt-1"></textarea></div>
                     <div><label for="project-__INDEX__-url" class="block font-medium">Project link</label><input id="project-__INDEX__-url" type="url" name="projects[__INDEX__][url]" maxlength="2048" data-http-url data-error-message="Use a complete http or https project link." placeholder="https://example.com" class="form-control mt-1"></div>
+                    <div><label for="project-__INDEX__-tags" class="block font-medium">Technology tags <span class="font-normal">(optional)</span></label><p id="project-__INDEX__-tags-hint" class="text-muted text-sm">Up to 8, separated by commas. Example: Laravel, PostgreSQL.</p><input id="project-__INDEX__-tags" name="projects[__INDEX__][tags_input]" maxlength="254" aria-describedby="project-__INDEX__-tags-hint" class="form-control mt-1"></div>
+                    <div><label for="project-__INDEX__-image" class="block font-medium">Project image <span class="font-normal">(optional)</span></label><p id="project-__INDEX__-image-hint" class="text-muted text-sm">JPEG, PNG, or WebP, up to 2 MB. This photo will be public on your portfolio.</p><input id="project-__INDEX__-image" name="project_images[__INDEX__]" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="project-__INDEX__-image-hint" class="form-control mt-1"></div>
+                    <div><label for="project-__INDEX__-image-alt" class="block font-medium">Project image description (alt text)</label><p id="project-__INDEX__-image-alt-hint" class="text-muted text-sm">Describe the project image. Example: Preview of your project.</p><input id="project-__INDEX__-image-alt" name="project_image_alts[__INDEX__]" maxlength="200" aria-describedby="project-__INDEX__-image-alt-hint" class="form-control mt-1"></div>
                     <button class="button-text" type="button" data-remove-row>Remove this project</button>
                 </fieldset>
             </template>
+        </div>
+    </details>
+
+    <details class="form-section" data-section data-section-optional>
+        <summary><span>Personal note <span class="font-normal">(optional)</span></span><span class="section-completion" data-section-completion>Optional</span></summary>
+        <div class="section-body">
+            <label for="motto" class="block font-medium">Short note or motto</label><p id="motto-hint" class="text-muted text-sm">Use your own words, up to 60 characters. Example: I like turning ideas into useful tools.</p><input id="motto" name="motto" value="{{ old('motto', $portfolio?->motto) }}" maxlength="60" aria-describedby="motto-hint" class="form-control mt-1">
         </div>
     </details>
 

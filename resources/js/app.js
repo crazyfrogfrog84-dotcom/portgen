@@ -21,7 +21,9 @@ function isEditingText(target) {
 
 function formSnapshot(form) {
     return Array.from(new FormData(form).entries())
-        .filter(([name]) => !['_token', '_method'].includes(name))
+        .filter(([name, value]) => !['_token', '_method'].includes(name)
+            && !(value instanceof File)
+            && !/^(?:profile_image$|profile_image_remove$|project_images(?:\[|$)|project_image_(?:ids|remove)(?:\[|$)|project_image_controls_present$)/.test(name))
         .map(([name, value]) => [name, String(value)]);
 }
 

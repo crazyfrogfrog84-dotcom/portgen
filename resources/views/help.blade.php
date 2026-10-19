@@ -11,7 +11,7 @@
         <section aria-labelledby="help-steps-heading">
             <h2 id="help-steps-heading" class="text-2xl font-semibold">How it works</h2>
             <ol class="mt-3 list-inside list-decimal space-y-2">
-                <li>Fill in your name, headline, introduction, and at least one skill. Education, experience, projects, and links are optional.</li>
+                <li>Fill in your name, headline, introduction, and at least one skill. Location, availability, contact email, photos, education, experience, projects, interests, personal notes, and links are optional.</li>
                 <li>Choose Simple, Modern, or Creative. Each preview shows your information.</li>
                 <li>Copy the public portfolio link to share. Copy and save your private manage link somewhere safe.</li>
             </ol>

@@ -15,8 +15,9 @@ RUN npm run build
 
 FROM php:8.3-apache-bookworm AS app
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev libzip-dev \
-    && docker-php-ext-install pdo_pgsql pgsql zip opcache \
+    && apt-get install -y --no-install-recommends libfreetype6-dev libjpeg62-turbo-dev libpng-dev libpq-dev libwebp-dev libzip-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install gd pdo_pgsql pgsql zip opcache \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 
