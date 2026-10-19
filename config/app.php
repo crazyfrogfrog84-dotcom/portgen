@@ -2,11 +2,17 @@
 
 $appKey = env('APP_KEY');
 
-if (is_string($appKey) && ! str_starts_with($appKey, 'base64:')) {
-    $decodedAppKey = base64_decode($appKey, true);
+if (is_string($appKey) && $appKey !== '') {
+    $hasBase64Prefix = str_starts_with($appKey, 'base64:');
+    $encodedAppKey = $hasBase64Prefix ? substr($appKey, 7) : $appKey;
+    $decodedAppKey = base64_decode($encodedAppKey, true);
 
     if ($decodedAppKey !== false && strlen($decodedAppKey) === 32) {
-        $appKey = 'base64:'.$appKey;
+        $appKey = 'base64:'.base64_encode($decodedAppKey);
+    } elseif (! $hasBase64Prefix && strlen($appKey) !== 32) {
+        $appKey = 'base64:'.base64_encode(hash('sha256', $appKey, true));
+    } elseif ($hasBase64Prefix) {
+        $appKey = 'base64:'.base64_encode(hash('sha256', $appKey, true));
     }
 }
 
