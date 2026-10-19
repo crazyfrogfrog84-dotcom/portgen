@@ -5,6 +5,8 @@
 /public/storage
 /storage/*.key
 /vendor
+/test-results
+/playwright-report
 .env
 .env.*
 !.env.example
