@@ -1,7 +1,9 @@
 <?php
 
+use App\Models\Portfolio;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('hci:summary', function () {
     $trackerPath = base_path('docs/HCI_TRACKER.md');
@@ -60,6 +62,17 @@ Artisan::command('hci:summary', function () {
     file_put_contents(base_path('docs/HCI_TRACKER_SUMMARY.md'), implode("\n", $lines));
     $this->info('Wrote docs/HCI_TRACKER_SUMMARY.md ('.$verified.'/'.$total.' verified, '.$percentage.'%).');
 })->purpose('Generate the HCI tracker status summary');
+
+Artisan::command('portfolios:purge-expired', function () {
+    $deleted = Portfolio::onlyTrashed()
+        ->whereNotNull('undo_until')
+        ->where('undo_until', '<=', now())
+        ->forceDelete();
+
+    $this->info("Permanently removed {$deleted} expired portfolio(s).");
+})->purpose('Permanently remove portfolios whose undo period has ended');
+
+Schedule::command('portfolios:purge-expired')->everyMinute()->withoutOverlapping();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
