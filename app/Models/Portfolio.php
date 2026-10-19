@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -20,6 +21,11 @@ class Portfolio extends Model
         'full_name',
         'headline',
         'about_me',
+        'location',
+        'availability',
+        'contact_email',
+        'motto',
+        'interests',
         'education',
         'work_experience',
         'skills',
@@ -36,6 +42,7 @@ class Portfolio extends Model
             'skills' => 'array',
             'projects' => 'array',
             'social_links' => 'array',
+            'interests' => 'array',
             'undo_until' => 'datetime',
         ];
     }
@@ -51,5 +58,10 @@ class Portfolio extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(PortfolioImage::class);
     }
 }

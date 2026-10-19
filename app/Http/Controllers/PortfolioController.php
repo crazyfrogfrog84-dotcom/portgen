@@ -6,9 +6,11 @@ use App\Http\Requests\SaveTemplateRequest;
 use App\Http\Requests\StorePortfolioRequest;
 use App\Http\Requests\UpdatePortfolioRequest;
 use App\Models\Portfolio;
+use App\Services\PortfolioImageManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
@@ -21,9 +23,15 @@ class PortfolioController extends Controller
         return view('portfolios.create');
     }
 
-    public function store(StorePortfolioRequest $request): RedirectResponse
+    public function store(StorePortfolioRequest $request, PortfolioImageManager $imageManager): RedirectResponse
     {
-        $portfolio = Portfolio::create($this->structuredData($request->validated()));
+        [$data, $projectIndexMap] = $this->structuredData($request->validated(), $request);
+        $portfolio = DB::transaction(function () use ($data, $projectIndexMap, $request, $imageManager) {
+            $portfolio = Portfolio::create($data);
+            $imageManager->sync($portfolio, $request, $projectIndexMap);
+
+            return $portfolio;
+        });
         $ownerManageUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
 
         return redirect(URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio]))
@@ -74,10 +82,16 @@ class PortfolioController extends Controller
 
         $template = strtolower($portfolio->template_choice);
 
+        $portfolio->load('images');
+        $profileImage = $portfolio->images->firstWhere('kind', 'profile');
+        $projectImages = $portfolio->images->where('kind', 'project')->keyBy('project_index');
+
         return view('portfolios.show', [
             'portfolio' => $portfolio,
             'template' => $template,
             'ownerManageUrl' => session('ownerManageUrl'),
+            'profileImage' => $profileImage,
+            'projectImages' => $projectImages,
         ]);
     }
 
@@ -94,16 +108,22 @@ class PortfolioController extends Controller
 
     public function edit(Portfolio $portfolio): View
     {
+        $portfolio->load('images');
+
         return view('portfolios.edit', [
             'portfolio' => $portfolio,
             'updateUrl' => URL::signedRoute('manage.update', ['portfolio' => $portfolio]),
         ]);
     }
 
-    public function update(UpdatePortfolioRequest $request, Portfolio $portfolio): RedirectResponse
+    public function update(UpdatePortfolioRequest $request, Portfolio $portfolio, PortfolioImageManager $imageManager): RedirectResponse
     {
-        $portfolio->fill($this->structuredData($request->validated()));
-        $portfolio->save();
+        [$data, $projectIndexMap] = $this->structuredData($request->validated(), $request);
+        DB::transaction(function () use ($portfolio, $data, $projectIndexMap, $request, $imageManager) {
+            $portfolio->fill($data);
+            $portfolio->save();
+            $imageManager->sync($portfolio, $request, $projectIndexMap);
+        });
 
         return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
             ->with('status', 'Your changes have been saved.');
@@ -196,11 +216,38 @@ class PortfolioController extends Controller
         return redirect()->route('portfolios.create')->with('status', 'Portfolio permanently deleted.');
     }
 
-    private function structuredData(array $data): array
+    /** @return array{0: array, 1: array<int, int>} */
+    private function structuredData(array $data, Request $request): array
     {
-        foreach (['education', 'work_experience', 'skills', 'projects', 'social_links'] as $field) {
+        if (isset($data['interests_input'])) {
+            $data['interests'] = array_values(array_filter(array_map('trim', explode(',', $data['interests_input'])), fn (string $value) => $value !== ''));
+        }
+        unset($data['interests_input']);
+
+        $projectIndexMap = [];
+        $projects = [];
+        foreach ($data['projects'] ?? [] as $submittedIndex => $project) {
+            if (isset($project['tags_input'])) {
+                $project['tags'] = array_values(array_filter(array_map('trim', explode(',', $project['tags_input'])), fn (string $value) => $value !== ''));
+            }
+            unset($project['tags_input']);
+            $project['tags'] = array_values(array_filter(array_map('trim', $project['tags'] ?? []), fn (string $value) => $value !== ''));
+
+            $hasText = count(array_filter($project, fn ($value) => $value !== null && $value !== '' && $value !== [])) > 0;
+            $hasImage = $request->hasFile("project_images.{$submittedIndex}")
+                || (! empty($request->input("project_image_ids.{$submittedIndex}")) && ! $request->boolean("project_image_remove.{$submittedIndex}"));
+            if (! $hasText && ! $hasImage) {
+                continue;
+            }
+
+            $projectIndexMap[$submittedIndex] = count($projects);
+            $projects[] = $project;
+        }
+        $data['projects'] = $projects;
+
+        foreach (['education', 'work_experience', 'skills', 'social_links'] as $field) {
             $items = $data[$field] ?? [];
-            if ($field !== 'skills') {
+            if (! in_array($field, ['skills'], true)) {
                 $items = array_filter($items, function ($item) {
                     return ! is_array($item) || count(array_filter($item, fn ($value) => $value !== null && $value !== '')) > 0;
                 });
@@ -208,6 +255,10 @@ class PortfolioController extends Controller
             $data[$field] = array_values($items);
         }
 
-        return $data;
+        foreach (['profile_image', 'profile_image_alt', 'profile_image_remove', 'project_images', 'project_image_alts', 'project_image_ids', 'project_image_remove'] as $field) {
+            unset($data[$field]);
+        }
+
+        return [$data, $projectIndexMap];
     }
 }

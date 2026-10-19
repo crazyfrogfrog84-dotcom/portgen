@@ -32,6 +32,19 @@ class PortfolioRoutesTest extends TestCase
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
 
+    public function test_form_shows_optional_profile_fields_and_public_photo_notice(): void
+    {
+        $this->get(route('portfolios.create'))
+            ->assertOk()
+            ->assertSee('name="location"', false)
+            ->assertSee('name="availability"', false)
+            ->assertSee('name="contact_email"', false)
+            ->assertSee('name="interests_input"', false)
+            ->assertSee('name="motto"', false)
+            ->assertSee('name="profile_image"', false)
+            ->assertSee('This photo will be public on your portfolio.');
+    }
+
     public function test_health_endpoint_is_available(): void
     {
         $this->get('/up')->assertOk()->assertSeeText('OK');
@@ -121,6 +134,8 @@ class PortfolioRoutesTest extends TestCase
             ->assertOk()
             ->assertSee('Creative portfolio template')
             ->assertSee($portfolio->full_name)
+            ->assertSee('Monogram for '.$portfolio->full_name)
+            ->assertSee('Generated cover for '.$portfolio->projects[0]['name'], false)
             ->assertSee($portfolio->projects[0]['name'])
             ->assertDontSee('Copy private link');
     }

@@ -550,6 +550,15 @@ img.pf-avatar {
     object-fit: cover;
 }
 
+.pf-project-image {
+    display: block;
+    width: 100%;
+    max-height: 20rem;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+}
+
 .pf-external-link::after {
     content: " ↗";
     margin-inline-start: var(--space-1);

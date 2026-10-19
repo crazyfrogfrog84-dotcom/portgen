@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PortfolioController;
+use App\Http\Controllers\PortfolioImageController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('portfolios.create'))->name('home');
@@ -22,6 +23,7 @@ Route::post('/portfolio/{portfolio:slug}/save-template', [PortfolioController::c
     ->middleware(['signed', 'throttle:20,1'])
     ->name('portfolio.save-template');
 Route::get('/p/{portfolio:slug}', [PortfolioController::class, 'show'])->name('portfolio.show');
+Route::get('/p/{portfolio:slug}/img/{image}', [PortfolioImageController::class, 'show'])->name('portfolio.image');
 
 Route::middleware('signed')->group(function () {
     Route::get('/manage/{portfolio:slug}', [PortfolioController::class, 'manage'])->name('manage.show');

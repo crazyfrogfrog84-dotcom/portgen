@@ -33,6 +33,11 @@ class PortfolioModelTest extends TestCase
             'full_name' => 'Avery Example',
             'headline' => 'Designer',
             'about_me' => 'A short introduction.',
+            'location' => 'Taipei',
+            'availability' => 'Open to internships',
+            'contact_email' => 'avery@example.test',
+            'motto' => 'Build useful things',
+            'interests' => ['Design', 'Music'],
             'education' => [],
             'work_experience' => [],
             'skills' => ['Design'],
@@ -58,11 +63,16 @@ class PortfolioModelTest extends TestCase
     public function test_json_columns_round_trip_as_structured_arrays(): void
     {
         $payload = [
+            'location' => 'Taipei, Taiwan',
+            'availability' => 'Open to internships',
+            'contact_email' => 'avery@example.test',
+            'motto' => 'Build useful things',
             'education' => [['institution' => 'Northstar University', 'qualification' => 'B.A.', 'year' => '2025']],
             'work_experience' => [['company' => 'Studio North', 'role' => 'Designer', 'description' => 'Built a design system.', 'start_date' => '2024-01', 'end_date' => null]],
             'skills' => ['Research', 'Design'],
-            'projects' => [['name' => 'Transit Map', 'description' => 'A public transit guide.', 'url' => 'https://example.test/project']],
+            'projects' => [['name' => 'Transit Map', 'description' => 'A public transit guide.', 'url' => 'https://example.test/project', 'tags' => ['Laravel', 'PostgreSQL']]],
             'social_links' => [['label' => 'LinkedIn', 'url' => 'https://linkedin.com/in/avery']],
+            'interests' => ['Design', 'Music'],
         ];
 
         $portfolio = Portfolio::factory()->create($payload);
