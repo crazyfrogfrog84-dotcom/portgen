@@ -204,7 +204,7 @@ class PortfolioRoutesTest extends TestCase
 
         $this->get(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
             ->assertOk()
-            ->assertSee('This private link lets you edit or delete this portfolio');
+            ->assertSee('This private link lets you edit or delete this guest portfolio.');
         $query = parse_url(URL::signedRoute('manage.show', ['portfolio' => $portfolio]), PHP_URL_QUERY);
         $this->assertStringNotContainsString('expires=', (string) $query);
 

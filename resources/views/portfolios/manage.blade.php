@@ -6,7 +6,21 @@
     <section class="mx-auto max-w-3xl space-y-6">
         <p class="text-sm font-semibold uppercase tracking-wide">Private portfolio management</p>
         <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Manage portfolio for {{ $portfolio->full_name }}</h1>
-        <p>This private link lets you edit or delete this portfolio. Save it somewhere private; anyone with the link can manage it.</p>
+        @if ($portfolio->user_id)
+            <p>This portfolio belongs to your account. Only you can manage it while signed in.</p>
+        @else
+            <p>This private link lets you edit or delete this guest portfolio. Save it somewhere private; anyone with the link can manage it.</p>
+        @endif
+        @if ($claimUrl)
+            <aside class="status-neutral grid gap-3" aria-labelledby="claim-title">
+                <h2 class="text-xl font-bold" id="claim-title">Add this portfolio to your account</h2>
+                <p>After you confirm, it will appear in My Portfolios and this private link will stop granting access.</p>
+                <form method="POST" action="{{ $claimUrl }}">
+                    @csrf
+                    <button class="button-primary" type="submit">Claim this portfolio</button>
+                </form>
+            </aside>
+        @endif
         <p><a class="button-secondary" href="{{ $publicUrl }}">View the public portfolio</a></p>
         <div class="flex flex-wrap gap-3">
             <a class="button-primary" href="{{ $editUrl }}">Edit portfolio</a>

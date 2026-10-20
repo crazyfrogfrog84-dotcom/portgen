@@ -18,19 +18,32 @@
                 <x-pf.theme-toggle :template="$template" />
             </div>
         </header>
+        @if ($isAccountOwner)
+            <x-pf.owner-toolbar :portfolio="$portfolio" :selected-template="$selectedTemplate" :is-preview="$isTemplatePreview" />
+        @endif
         <main id="main" class="pf-main" tabindex="-1">
             @include('portfolios.templates.'.$template, ['portfolio' => $portfolio, 'profileImage' => $profileImage, 'projectImages' => $projectImages])
         </main>
-        @if ($ownerManageUrl)
+        @if ($ownerManageUrl || $isAccountOwner)
             <aside class="pf-owner-note" aria-labelledby="manage-link-heading">
                 @include('portfolios.stepper', ['active' => 3])
                 <h2 id="manage-link-heading">Your portfolio is ready</h2>
-                <p>Keep this private link to manage your portfolio later. Anyone with the link can manage it.</p>
-                <div class="pf-owner-note__actions">
-                    <input id="owner-manage-link" type="url" readonly value="{{ $ownerManageUrl }}" aria-label="Private manage link" class="form-control">
-                    <button type="button" class="button-secondary" data-copy-target="owner-manage-link">Copy private link</button>
-                </div>
-                <p data-copy-status role="status" aria-live="polite"></p>
+                @if ($isAccountOwner)
+                    <p>This portfolio is linked to your account. Manage it from My Portfolios.</p>
+                    <p><a class="button-primary" href="{{ route('dashboard') }}">Open My Portfolios</a></p>
+                @else
+                    <p>Keep this private link to manage this guest portfolio later. Anyone with the link can manage it.</p>
+                    <div class="pf-owner-note__actions">
+                        <input id="owner-manage-link" type="url" readonly value="{{ $ownerManageUrl }}" aria-label="Private manage link" class="form-control">
+                        <button type="button" class="button-secondary" data-copy-target="owner-manage-link">Copy private link</button>
+                    </div>
+                    <p data-copy-status role="status" aria-live="polite"></p>
+                    <div class="surface grid gap-2 rounded-xl border p-4">
+                        <h3 class="text-lg font-bold">Create an account to keep this portfolio safe</h3>
+                        <p>Adding it to an account lets you manage it without saving this private link. After claiming, the old link will stop working.</p>
+                        <a class="button-secondary w-fit" href="{{ route('register', ['claim_url' => $ownerManageUrl]) }}">Create an account and add this portfolio</a>
+                    </div>
+                @endif
                 <p>Public page: <a href="{{ route('portfolio.show', ['portfolio' => $portfolio]) }}">{{ route('portfolio.show', ['portfolio' => $portfolio]) }}</a></p>
             </aside>
         @endif

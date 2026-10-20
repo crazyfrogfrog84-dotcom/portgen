@@ -18,6 +18,21 @@
                 <a class="button-text" href="{{ route('help') }}">Help</a>
                 <button class="button-text" type="button" data-dialog-open="help-dialog" aria-haspopup="dialog">Shortcuts <kbd>?</kbd></button>
                 <a class="button-secondary" href="{{ route('portfolios.create') }}">Create a portfolio</a>
+                @auth
+                    <details class="relative">
+                        <summary class="button-secondary min-h-11 cursor-pointer list-none">Account menu <span aria-hidden="true">⌄</span></summary>
+                        <div class="surface absolute right-0 z-20 mt-2 grid min-w-48 gap-1 rounded-xl border p-2 shadow-lg">
+                            <a class="button-text justify-start" href="{{ route('dashboard') }}">My portfolios</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button class="button-text w-full justify-start" type="submit">Log out</button>
+                            </form>
+                        </div>
+                    </details>
+                @else
+                    <a class="button-text" href="{{ route('login') }}">Log in</a>
+                    <a class="button-secondary" href="{{ route('register') }}">Sign up</a>
+                @endauth
             </nav>
         </div>
     </header>

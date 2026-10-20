@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('hci:summary', function () {
     $trackerPath = base_path('docs/HCI_TRACKER.md');
     $tracker = file_get_contents($trackerPath);
-    preg_match_all('/^\|\s*([SNHUCVR]\d+)\s*\|([^\n]*)$/m', $tracker, $matches, PREG_SET_ORDER);
+    preg_match_all('/^\|\s*([SNHUCVRTA]\d+)\s*\|([^\n]*)$/m', $tracker, $matches, PREG_SET_ORDER);
 
     $sets = [
         'S' => 'Shneiderman',
@@ -18,6 +18,7 @@ Artisan::command('hci:summary', function () {
         'C' => 'Color theory',
         'V' => 'Visual design',
         'R' => 'User needs',
+        'A' => 'Authentication usability',
     ];
     $counts = [];
     $open = [];
