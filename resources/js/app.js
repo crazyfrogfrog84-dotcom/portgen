@@ -181,11 +181,35 @@ function validateForm(form) {
 
     if (!valid) {
         const firstInvalid = form.querySelector('[aria-invalid="true"]');
-        firstInvalid?.focus();
         firstInvalid?.closest('[data-section]')?.setAttribute('open', '');
+        updateSections(form);
+        updateErrorSummary(form);
+        firstInvalid?.focus();
         announce('Some details need attention. Review the message beside each field.');
     }
     return valid;
+}
+
+function updateErrorSummary(form) {
+    const summary = form.querySelector('[data-form-error-summary]');
+    const message = summary?.querySelector('[data-error-summary-message]');
+    if (!summary || !message) return;
+
+    const invalidFields = Array.from(form.querySelectorAll('[aria-invalid="true"]'))
+        .filter((field) => field.id && field.matches('input, textarea, select'));
+    summary.hidden = invalidFields.length === 0;
+    if (!invalidFields.length) return;
+
+    message.replaceChildren(document.createTextNode(`Fix ${invalidFields.length} ${invalidFields.length === 1 ? 'thing' : 'things'}: `));
+    invalidFields.forEach((field, index) => {
+        if (index) message.append(document.createTextNode(', '));
+        const link = document.createElement('a');
+        link.href = `#${field.id}`;
+        link.dataset.errorSummaryLink = '';
+        const inlineError = field.parentElement?.querySelector(`[data-inline-error-for="${CSS.escape(field.id)}"]`);
+        link.textContent = (inlineError?.textContent || field.dataset.errorMessage || 'Check this field.').replace(/\.$/, '');
+        message.append(link);
+    });
 }
 
 function updateSections(form) {
@@ -200,7 +224,8 @@ function updateSections(form) {
         const isComplete = requiredFields.every((field) => field.value.trim() && field.validity.valid) && hasSkill;
         const isRequired = section.hasAttribute('data-section-required');
 
-        output.textContent = isRequired ? (isComplete ? 'Complete' : 'In progress') : (hasValue ? 'Added' : 'Optional');
+        const needsAttention = section.querySelector('[aria-invalid="true"]');
+        output.textContent = needsAttention ? 'Needs attention' : isRequired ? (isComplete ? 'Complete' : 'In progress') : (hasValue ? 'Added' : 'Optional');
         output.setAttribute('aria-label', `${section.querySelector('summary > span')?.textContent.trim() || 'Section'}: ${output.textContent}`);
     }
 }
@@ -323,6 +348,7 @@ for (const form of document.querySelectorAll('[data-portfolio-form]')) {
         if (event.target instanceof HTMLElement) {
             validateField(event.target);
             updateSections(form);
+            updateErrorSummary(form);
         }
         if (draftForm) {
             window.clearTimeout(draftTimer);
@@ -333,6 +359,7 @@ for (const form of document.querySelectorAll('[data-portfolio-form]')) {
         if (event.target instanceof HTMLElement) {
             validateField(event.target);
             updateSections(form);
+            updateErrorSummary(form);
         }
         if (draftForm) saveDraft();
     });
@@ -376,7 +403,24 @@ for (const form of document.querySelectorAll('[data-portfolio-form]')) {
     });
 
     updateSections(form);
+    const errorSummary = form.querySelector('[data-form-error-summary]:not([hidden])');
+    if (errorSummary) {
+        const firstInvalid = form.querySelector('[aria-invalid="true"]');
+        firstInvalid?.closest('[data-section]')?.setAttribute('open', '');
+        window.requestAnimationFrame(() => (firstInvalid || errorSummary).focus());
+    }
 }
+
+document.addEventListener('click', (event) => {
+    const link = event.target instanceof Element ? event.target.closest('[data-error-summary-link]') : null;
+    if (!link) return;
+    const field = document.getElementById(link.hash.slice(1));
+    if (!field) return;
+    event.preventDefault();
+    const section = field.closest('[data-section]');
+    if (section) section.open = true;
+    window.requestAnimationFrame(() => field.focus());
+});
 
 for (const section of document.querySelectorAll('[data-section]')) {
     section.addEventListener('toggle', () => {

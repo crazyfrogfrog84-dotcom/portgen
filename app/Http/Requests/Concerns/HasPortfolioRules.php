@@ -158,8 +158,12 @@ trait HasPortfolioRules
     public function messages(): array
     {
         return [
+            'full_name.required' => 'Name is required.',
+            'headline.required' => 'Headline is required.',
+            'about_me.required' => 'About me is required.',
             'skills.required' => 'Add at least one skill.',
             'skills.min' => 'Add at least one skill.',
+            'skills.*.required' => 'Add at least one skill.',
             'projects.*.url.url' => 'Use a complete http or https project link.',
             'social_links.*.url.url' => 'Use a complete http or https social link.',
         ];

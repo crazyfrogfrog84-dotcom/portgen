@@ -56,10 +56,34 @@ class PortfolioRoutesTest extends TestCase
         $portfolio = Portfolio::query()->firstOrFail();
 
         $response->assertRedirect();
+        $this->assertSame('Avery Example', $portfolio->full_name);
         $this->assertTrue(URL::hasValidSignature(request()->create($response->headers->get('Location'))));
         $this->assertSame(1, Portfolio::count());
         $this->assertNotEmpty(session('ownerManageUrl'));
         $this->assertTrue(URL::hasValidSignature(request()->create(session('ownerManageUrl'))));
+    }
+
+    public function test_server_validation_errors_render_linked_summary_and_mark_required_sections(): void
+    {
+        $this->from(route('portfolios.create'))
+            ->post(route('portfolios.store'), [
+                'full_name' => 'Avery Example',
+                'headline' => 'Designer',
+                'about_me' => '',
+                'skills' => [''],
+            ])
+            ->assertRedirect(route('portfolios.create'))
+            ->assertSessionHasErrors(['about_me', 'skills.0']);
+
+        $this->get(route('portfolios.create'))
+            ->assertOk()
+            ->assertSee('data-form-error-summary', false)
+            ->assertSee('Fix 2 things:', false)
+            ->assertSee('href="#about_me" data-error-summary-link', false)
+            ->assertSee('href="#skill-0" data-error-summary-link', false)
+            ->assertSee('About me is required')
+            ->assertSee('Add at least one skill')
+            ->assertSee('Needs attention');
     }
 
     public function test_store_requires_a_skill_and_rejects_unsafe_urls(): void
