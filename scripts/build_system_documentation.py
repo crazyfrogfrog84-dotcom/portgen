@@ -27,6 +27,7 @@ TRACKER_GROUPS = {
     "C": "Color theory",
     "V": "Visual design principles",
     "R": "User needs",
+    "A": "Authentication usability",
 }
 
 SCREENSHOTS = [

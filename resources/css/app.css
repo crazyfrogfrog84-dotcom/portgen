@@ -34,6 +34,7 @@ body {
 a {
     display: inline-flex;
     min-height: 44px;
+    min-width: 44px;
     align-items: center;
     color: var(--ui-accent);
     text-underline-offset: 0.2em;
@@ -760,19 +761,6 @@ dialog::backdrop {
     margin: 0;
 }
 
-.pf-theme-option {
-    min-width: 44px;
-    min-height: 44px;
-}
-
-.pf-theme-option input[type="radio"] {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-    margin: 0;
-}
-
 .skip-link {
     position: absolute;
     z-index: 100;
@@ -903,40 +891,104 @@ dialog::backdrop {
 
 .pf-theme-toggle {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--surface);
+    gap: var(--space-1);
+    border: 0;
+    background: transparent;
     color: var(--text);
-    padding: var(--space-2) var(--space-3);
-}
-
-.pf-theme-toggle legend {
-    padding-inline: var(--space-1);
-    font-size: var(--type-label);
-    font-weight: 700;
+    padding: 0;
 }
 
 .pf-theme-option {
+    position: relative;
     display: inline-flex;
-    min-width: 44px;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-1);
-    border-radius: var(--radius-sm);
-    padding-inline: var(--space-2);
-    cursor: pointer;
-}
-
-.pf-theme-option input[type="radio"] {
     width: 44px;
     min-width: 44px;
     height: 44px;
     min-height: 44px;
-    accent-color: var(--accent);
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+}
+
+.pf-theme-option__icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.pf-theme-option__icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.pf-theme-option input[type="radio"] {
+    position: absolute;
+    z-index: 1;
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.pf-theme-option input[type="radio"]:checked + .pf-theme-option__icon {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-contrast);
+}
+
+.pf-theme-option input[type="radio"]:focus-visible + .pf-theme-option__icon {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+
+.pf-owner-toolbar {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.pf-owner-toolbar__inner {
+    display: flex;
+    max-width: 88rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-inline: auto;
+    padding: var(--space-3) clamp(var(--space-4), 4vw, var(--space-7));
+}
+
+.pf-owner-toolbar__preview,
+.pf-owner-toolbar__actions,
+.pf-owner-toolbar__templates {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.pf-owner-toolbar__label {
+    margin: 0;
+    font-size: var(--type-label);
+    font-weight: 700;
+}
+
+.pf-owner-toolbar__actions form {
+    margin: 0;
+}
+
+@media (max-width: 42rem) {
+    .pf-owner-toolbar__inner {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }
 
 [data-template] .button-primary {

@@ -1,5 +1,58 @@
 import './bootstrap';
 
+const authErrorSummary = document.querySelector('[data-auth-error-summary]');
+if (authErrorSummary) window.requestAnimationFrame(() => authErrorSummary.focus());
+
+for (const button of document.querySelectorAll('[data-password-toggle]')) {
+    button.addEventListener('click', () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+        if (!(input instanceof HTMLInputElement)) return;
+        const shown = input.type === 'password';
+        input.type = shown ? 'text' : 'password';
+        button.setAttribute('aria-pressed', String(shown));
+        button.setAttribute('aria-label', `${shown ? 'Hide' : 'Show'} password`);
+        button.textContent = shown ? 'Hide' : 'Show';
+        input.focus();
+    });
+}
+
+for (const input of document.querySelectorAll('[data-caps-lock-input]')) {
+    const warning = input.closest('.grid')?.querySelector('[data-caps-lock-warning]');
+    const updateCapsLockWarning = (event) => {
+        if (warning) warning.hidden = !event.getModifierState('CapsLock');
+    };
+    input.addEventListener('keydown', updateCapsLockWarning);
+    input.addEventListener('keyup', updateCapsLockWarning);
+    input.addEventListener('blur', () => { if (warning) warning.hidden = true; });
+}
+
+for (const input of document.querySelectorAll('[data-password-requirement-input]')) {
+    const hint = document.querySelector('[data-password-requirement]');
+    input.addEventListener('input', () => {
+        if (hint) hint.textContent = input.value.length >= 8
+            ? 'Password length requirement met.'
+            : 'Use at least 8 characters.';
+    });
+}
+
+for (const form of document.querySelectorAll('[data-loading-form]')) {
+    form.addEventListener('submit', () => {
+        const button = form.querySelector('[data-loading-label]');
+        if (!button) return;
+        button.disabled = true;
+        button.textContent = button.dataset.loadingLabel;
+    });
+}
+
+for (const countdown of document.querySelectorAll('[data-lockout-countdown]')) {
+    const seconds = countdown.querySelector('span');
+    let remaining = Number(countdown.dataset.seconds || 0);
+    window.setInterval(() => {
+        remaining = Math.max(0, remaining - 1);
+        if (seconds) seconds.textContent = String(remaining);
+    }, 1000);
+}
+
 if (document.body.hasAttribute('data-clear-draft')) {
     try { localStorage.removeItem('portgen:portfolio-draft'); } catch { /* Storage may be disabled. */ }
 }
@@ -407,23 +460,25 @@ document.addEventListener('click', async (event) => {
     announce('Private link copied. Keep it private; anyone with it can manage this portfolio.');
 });
 
-const deleteForm = document.querySelector('[data-delete-form]');
+const deleteForms = Array.from(document.querySelectorAll('[data-delete-form]'));
 const deleteDialog = document.querySelector('[data-delete-confirmation]');
 let pendingDelete = false;
-deleteForm?.addEventListener('submit', (event) => {
+let activeDeleteForm = null;
+deleteForms.forEach((form) => form.addEventListener('submit', (event) => {
     if (pendingDelete) return;
     event.preventDefault();
+    activeDeleteForm = form;
     if (deleteDialog?.showModal) deleteDialog.showModal();
-    else if (window.confirm('Delete this portfolio? You will have 10 seconds to undo.')) performDelete();
-});
+    else if (window.confirm('Delete this portfolio? You will have 10 seconds to undo.')) performDelete(form);
+}));
 deleteDialog?.querySelector('[data-cancel-delete]')?.addEventListener('click', () => deleteDialog.close());
 deleteDialog?.querySelector('[data-confirm-delete]')?.addEventListener('click', () => {
     deleteDialog.close();
-    performDelete();
+    performDelete(activeDeleteForm);
 });
 
-async function performDelete() {
-    if (!deleteForm || pendingDelete) return;
+async function performDelete(form) {
+    if (!form || pendingDelete) return;
     pendingDelete = true;
     const button = deleteDialog?.querySelector('[data-confirm-delete]');
     if (button) {
@@ -431,7 +486,7 @@ async function performDelete() {
         button.textContent = 'Deleting…';
     }
     try {
-        const response = await fetch(deleteForm.action, {
+        const response = await fetch(form.action, {
             method: 'DELETE',
             headers: {
                 Accept: 'application/json',

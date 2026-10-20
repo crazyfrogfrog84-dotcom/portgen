@@ -10,6 +10,7 @@ use App\Services\PortfolioImageManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
@@ -28,10 +29,19 @@ class PortfolioController extends Controller
         [$data, $projectIndexMap] = $this->structuredData($request->validated(), $request);
         $portfolio = DB::transaction(function () use ($data, $projectIndexMap, $request, $imageManager) {
             $portfolio = Portfolio::create($data);
+            if ($request->user()) {
+                $portfolio->user_id = $request->user()->id;
+                $portfolio->save();
+            }
             $imageManager->sync($portfolio, $request, $projectIndexMap);
 
             return $portfolio;
         });
+        if ($portfolio->user_id !== null) {
+            return redirect()->route('portfolio.select-template', ['portfolio' => $portfolio])
+                ->with('status', 'Your portfolio draft is saved. Choose a template to continue.');
+        }
+
         $ownerManageUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
 
         return redirect(URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio]))
@@ -41,46 +51,58 @@ class PortfolioController extends Controller
 
     public function selectTemplate(Request $request, Portfolio $portfolio): View
     {
+        $this->authorize('manage', $portfolio);
         $backUrl = route('portfolios.create');
         $fromManage = $request->boolean('from_manage');
         if ($fromManage) {
             $backUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
+        } elseif (Auth::id() === $portfolio->user_id && $portfolio->user_id !== null) {
+            $backUrl = route('manage.edit', ['portfolio' => $portfolio]);
         } elseif (session()->has('ownerManageUrl')) {
             session()->keep(['ownerManageUrl']);
             $backUrl = URL::signedRoute('manage.edit', ['portfolio' => $portfolio]);
         }
-        $saveTemplateUrl = URL::signedRoute('portfolio.save-template', array_filter([
+        $saveTemplateParameters = array_filter([
             'portfolio' => $portfolio,
             'from_manage' => $fromManage ? 1 : null,
-        ], fn ($value) => $value !== null));
+        ], fn ($value) => $value !== null);
+        $saveTemplateUrl = $this->ownerUrl('portfolio.save-template', $portfolio, $saveTemplateParameters);
 
         return view('portfolios.select-template', compact('portfolio', 'backUrl', 'saveTemplateUrl', 'fromManage'));
     }
 
     public function saveTemplate(SaveTemplateRequest $request, Portfolio $portfolio): RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         $ownerManageUrl = session('ownerManageUrl');
         $portfolio->template_choice = $request->validated('template_choice');
         $portfolio->save();
 
         if ($request->boolean('from_manage')) {
-            return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
+            return redirect($this->ownerUrl('manage.show', $portfolio))
                 ->with('status', 'Your template has been changed.');
         }
 
-        return redirect()
-            ->route('portfolio.show', ['portfolio' => $portfolio])
-            ->with('status', 'Your portfolio is ready to share.')
-            ->with('ownerManageUrl', $ownerManageUrl);
+        $response = redirect()->route('portfolio.show', ['portfolio' => $portfolio])
+            ->with('status', 'Your portfolio is ready to share.');
+
+        return $portfolio->user_id === null ? $response->with('ownerManageUrl', $ownerManageUrl) : $response;
     }
 
-    public function show(Portfolio $portfolio): View|RedirectResponse
+    public function show(Request $request, Portfolio $portfolio): View|RedirectResponse
     {
         if (! $portfolio->template_choice) {
             abort(404);
         }
 
-        $template = strtolower($portfolio->template_choice);
+        $storedTemplate = strtolower($portfolio->template_choice);
+        $isAccountOwner = $portfolio->user_id !== null && (int) Auth::id() === (int) $portfolio->user_id;
+        $requestedPreview = $request->query('preview');
+        $requestedPreview = is_string($requestedPreview) ? strtolower($requestedPreview) : '';
+        $previewChoices = ['simple', 'modern', 'creative'];
+        $template = $isAccountOwner && in_array($requestedPreview, $previewChoices, true)
+            ? $requestedPreview
+            : $storedTemplate;
 
         $portfolio->load('images');
         $profileImage = $portfolio->images->firstWhere('kind', 'profile');
@@ -99,7 +121,10 @@ class PortfolioController extends Controller
         return view('portfolios.show', [
             'portfolio' => $portfolio,
             'template' => $template,
+            'selectedTemplate' => ucfirst($template),
+            'isTemplatePreview' => $isAccountOwner && in_array($requestedPreview, $previewChoices, true),
             'ownerManageUrl' => session('ownerManageUrl'),
+            'isAccountOwner' => $isAccountOwner,
             'profileImage' => $profileImage,
             'projectImages' => $projectImages,
             'navItems' => $navItems,
@@ -108,27 +133,34 @@ class PortfolioController extends Controller
 
     public function manage(Portfolio $portfolio): View
     {
+        $this->authorize('manage', $portfolio);
+
         return view('portfolios.manage', [
             'portfolio' => $portfolio,
             'publicUrl' => route('portfolio.show', ['portfolio' => $portfolio]),
-            'editUrl' => URL::signedRoute('manage.edit', ['portfolio' => $portfolio]),
-            'deleteUrl' => URL::signedRoute('manage.destroy', ['portfolio' => $portfolio]),
-            'changeTemplateUrl' => URL::signedRoute('portfolio.select-template', ['portfolio' => $portfolio, 'from_manage' => 1]),
+            'editUrl' => $this->ownerUrl('manage.edit', $portfolio),
+            'deleteUrl' => $this->ownerUrl('manage.destroy', $portfolio),
+            'changeTemplateUrl' => $this->ownerUrl('portfolio.select-template', $portfolio, ['from_manage' => 1]),
+            'claimUrl' => $portfolio->user_id === null && Auth::check()
+                ? URL::signedRoute('manage.claim', ['portfolio' => $portfolio])
+                : null,
         ]);
     }
 
     public function edit(Portfolio $portfolio): View
     {
+        $this->authorize('manage', $portfolio);
         $portfolio->load('images');
 
         return view('portfolios.edit', [
             'portfolio' => $portfolio,
-            'updateUrl' => URL::signedRoute('manage.update', ['portfolio' => $portfolio]),
+            'updateUrl' => $this->ownerUrl('manage.update', $portfolio),
         ]);
     }
 
     public function update(UpdatePortfolioRequest $request, Portfolio $portfolio, PortfolioImageManager $imageManager): RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         [$data, $projectIndexMap] = $this->structuredData($request->validated(), $request);
         DB::transaction(function () use ($portfolio, $data, $projectIndexMap, $request, $imageManager) {
             $portfolio->fill($data);
@@ -136,25 +168,36 @@ class PortfolioController extends Controller
             $imageManager->sync($portfolio, $request, $projectIndexMap);
         });
 
-        return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
+        return redirect($this->ownerUrl('manage.show', $portfolio))
             ->with('status', 'Your changes have been saved.');
+    }
+
+    public function claim(Request $request, Portfolio $portfolio): RedirectResponse
+    {
+        $this->authorize('claim', $portfolio);
+        $portfolio->user_id = $request->user()->id;
+        $portfolio->save();
+
+        return redirect()->route('manage.show', ['portfolio' => $portfolio])
+            ->with('status', 'This portfolio is now part of your account. Its old private link no longer grants access.');
     }
 
     public function destroy(Request $request, Portfolio $portfolio): JsonResponse|RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         $portfolio->undo_until = now()->addSeconds(self::UNDO_SECONDS);
         $portfolio->save();
         $portfolio->delete();
 
-        $undoUrl = URL::signedRoute('manage.undo', [
+        $undoUrl = $this->ownerUrl('manage.undo', $portfolio, [
             'portfolio' => $portfolio->slug,
             'undo_until' => $portfolio->undo_until->timestamp,
         ]);
-        $purgeUrl = URL::signedRoute('manage.purge', [
+        $purgeUrl = $this->ownerUrl('manage.purge', $portfolio, [
             'portfolio' => $portfolio->slug,
             'undo_until' => $portfolio->undo_until->timestamp,
         ]);
-        $deletedUrl = URL::signedRoute('manage.deleted', ['portfolio' => $portfolio->slug]);
+        $deletedUrl = $this->ownerUrl('manage.deleted', $portfolio, []);
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -171,16 +214,17 @@ class PortfolioController extends Controller
 
     public function deleted(Portfolio $portfolio): View|RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         if (! $portfolio->trashed()) {
-            return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]));
+            return redirect($this->ownerUrl('manage.show', $portfolio));
         }
 
         $undoOpen = $portfolio->undo_until && now()->lessThan($portfolio->undo_until);
-        $undoUrl = $undoOpen ? URL::signedRoute('manage.undo', [
+        $undoUrl = $undoOpen ? $this->ownerUrl('manage.undo', $portfolio, [
             'portfolio' => $portfolio->slug,
             'undo_until' => $portfolio->undo_until->timestamp,
         ]) : null;
-        $purgeUrl = URL::signedRoute('manage.purge', [
+        $purgeUrl = $this->ownerUrl('manage.purge', $portfolio, [
             'portfolio' => $portfolio->slug,
             'undo_until' => $portfolio->undo_until?->timestamp,
         ]);
@@ -195,6 +239,7 @@ class PortfolioController extends Controller
 
     public function undo(Request $request, Portfolio $portfolio): JsonResponse|RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         abort_unless($portfolio->trashed(), 409, 'This portfolio is not waiting for deletion.');
         abort_if(! $portfolio->undo_until || now()->greaterThanOrEqualTo($portfolio->undo_until), 410, 'The 10-second undo period has ended.');
 
@@ -205,16 +250,17 @@ class PortfolioController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Deletion undone. Your portfolio is restored.',
-                'manageUrl' => URL::signedRoute('manage.show', ['portfolio' => $portfolio]),
+                'manageUrl' => $this->ownerUrl('manage.show', $portfolio),
             ]);
         }
 
-        return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]))
+        return redirect($this->ownerUrl('manage.show', $portfolio))
             ->with('status', 'Deletion undone. Your portfolio is restored.');
     }
 
     public function purge(Request $request, Portfolio $portfolio): JsonResponse|RedirectResponse
     {
+        $this->authorize('manage', $portfolio);
         abort_unless($portfolio->trashed(), 409, 'This portfolio is not waiting for deletion.');
         abort_if($portfolio->undo_until && now()->lessThan($portfolio->undo_until), 409, 'The undo period is still open.');
 
@@ -224,7 +270,17 @@ class PortfolioController extends Controller
             return response()->json(['message' => 'Portfolio permanently deleted.']);
         }
 
-        return redirect()->route('portfolios.create')->with('status', 'Portfolio permanently deleted.');
+        return redirect($portfolio->user_id ? route('dashboard') : route('portfolios.create'))->with('status', 'Portfolio permanently deleted.');
+    }
+
+    private function ownerUrl(string $routeName, Portfolio $portfolio, array $parameters = []): string
+    {
+        $parameters = array_merge(['portfolio' => $portfolio], $parameters);
+        if ($portfolio->user_id !== null && Auth::id() === $portfolio->user_id) {
+            return route($routeName, $parameters);
+        }
+
+        return URL::signedRoute($routeName, $parameters);
     }
 
     /** @return array{0: array, 1: array<int, int>} */

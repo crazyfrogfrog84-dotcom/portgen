@@ -12,6 +12,7 @@
         <p class="font-semibold">PortGen</p>
         <h1 id="error-title">@yield('heading', 'We could not complete that request')</h1>
         <p>@yield('message', 'Please try again, or return to the start of the portfolio form.')</p>
+        @hasSection('action')<p>@yield('action')</p>@endif
         <p><a href="{{ route('portfolios.create') }}">Return to PortGen</a></p>
     </main>
 </body>
