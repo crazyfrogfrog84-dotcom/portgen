@@ -1,6 +1,6 @@
 @props(['template' => 'portfolio', 'scope' => 'portfolio'])
 
-<fieldset class="pf-theme-toggle {{ $scope === 'app' ? 'app-theme-toggle' : '' }}" data-theme-toggle data-theme-scope="{{ $scope }}">
+<fieldset class="pf-theme-toggle{{ $scope === 'app' ? ' app-theme-toggle' : '' }}" data-theme-toggle data-theme-scope="{{ $scope }}">
     <legend class="sr-only">{{ $scope === 'app' ? 'Site color theme' : 'Portfolio color theme' }}</legend>
     @foreach (['light' => 'Light', 'dark' => 'Dark', 'system' => 'System'] as $value => $label)
         <label class="pf-theme-option" for="theme-{{ $template }}-{{ $value }}">
