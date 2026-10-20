@@ -18,7 +18,7 @@ Route::middleware(['guest', 'auth.no-store'])->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:20,1')->name('login.store');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('register.store');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1,register')->name('register.store');
 
 });
 Route::middleware(['auth', 'auth.no-store'])->group(function () {
@@ -31,7 +31,7 @@ if (app()->environment(['local', 'testing'])) {
     Route::get('/__local-errors/{status}', fn (string $status) => abort((int) $status))
         ->whereIn('status', ['403', '404', '419', '429', '500']);
     Route::get('/__local/simple-fixture/{fixture}', function (string $fixture) {
-        $slugs = ['demo-minimal' => 'demo-min', 'demo-rich' => 'demo-rich'];
+        $slugs = ['demo-minimal' => 'demo-min', 'demo-rich' => 'demo-rich', 'demo-stress' => 'demo-stres'];
         abort_unless(isset($slugs[$fixture]), 404);
         $portfolio = Portfolio::query()->where('slug', $slugs[$fixture])->firstOrFail();
 

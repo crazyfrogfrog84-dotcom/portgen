@@ -113,4 +113,12 @@ test('Simple owner controls, contrast modes, and minimal/rich screenshots remain
         const borderWidth = await page.locator(selector).first().evaluate((element) => getComputedStyle(element).borderTopWidth);
         expect(borderWidth, `${selector} should keep a strong border in forced colors`).toBe('2px');
     }
+
+    await page.emulateMedia({ forcedColors: 'none', contrast: 'no-preference', reducedMotion: 'reduce' });
+    const transitionDuration = await page.locator('.pf-page').evaluate((element) => getComputedStyle(element).transitionDuration);
+    expect(Number.parseFloat(transitionDuration), 'Reduced motion should suppress transitions').toBeLessThanOrEqual(0.001);
+
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('[data-owner-toolbar]')).toBeHidden();
+    await expect(page.locator('[data-theme-toggle]')).toBeHidden();
 });

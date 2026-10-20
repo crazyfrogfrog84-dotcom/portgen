@@ -1,6 +1,11 @@
 erDiagram
+    USERS ||--o{ PORTFOLIOS : owns
+    USERS {
+        bigint id PK
+    }
     PORTFOLIOS {
         uuid id PK
+        bigint user_id FK "nullable for guests"
         varchar_10 slug UK
         varchar_120 full_name
         varchar_180 headline

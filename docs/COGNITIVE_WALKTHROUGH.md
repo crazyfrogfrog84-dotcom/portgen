@@ -17,6 +17,17 @@ This is an expert cognitive walkthrough of the implemented screens using the thr
 
 **Expert conclusion:** The path provides cues for a first-time student and allows optional work sections. A classmate study should check whether the student recognizes the private link's bearer-access implications and whether the required fields feel appropriate.
 
+## Simple portfolio owner
+
+**Goal:** Check a portfolio's appearance, keep control of its template and theme, and reopen its management page.
+
+1. Opens the public page using the signed guest link or while signed in as the portfolio's account owner. The shared header exposes template and Manage controls only to that owner; a visitor or another account sees the saved portfolio and theme control only.
+2. Chooses a template. The page shows a live query-string preview and the status “Not saved yet”; Save persists it, while Cancel restores the saved template. With JavaScript unavailable, ordinary links and the Save form still work.
+3. Opens Manage and chooses Edit portfolio or Manage page. Account owners use My portfolios; guest owners copy their private link and receive a live confirmation without the long URL being printed inline.
+4. Uses the theme control and, on narrow screens, the template popover. Arrow keys move among desktop choices; Escape closes the mobile list and returns focus to its button.
+
+**Expert conclusion:** The owner actions are grouped in the same header as navigation and the theme control, while the public view stays free of owner-only actions. The guest link remains a bearer secret and should not be shared. The review checked the Simple page with minimal, rich, and stress data, but has not measured first-time recognition with participants.
+
 ## Freelancer
 
 **Goal:** Create a work-focused public page and revise it after a new project.

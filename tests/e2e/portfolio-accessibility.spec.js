@@ -180,7 +180,7 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
         await page.waitForURL(/\/p\//);
         const readyBanner = page.locator('[data-ready-banner]');
         await expect(readyBanner).toBeVisible();
-        await expect(readyBanner).toContainText('Your portfolio is ready. Copy private link.');
+        await expect(readyBanner).toContainText('Your portfolio is ready. Save your private link to manage it later.');
         const manageUrl = await readyBanner.locator('[data-copy-link]').getAttribute('data-copy-link');
         const publicUrl = page.url();
         await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(publicUrl).origin });

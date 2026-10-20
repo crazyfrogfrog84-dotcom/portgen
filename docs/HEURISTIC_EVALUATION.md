@@ -4,7 +4,7 @@
 
 This is a single-reviewer expert inspection, not a participant study. The reviewer walked the primary create, publish, manage, edit, delete, help, template, and error states at mobile and desktop viewport sizes. The browser suite captured 17 screen states at 375 by 812 and 1280 by 800 CSS pixels, checked each mobile state at 320 pixels for horizontal overflow, and ran axe-core against each captured state. The create screen was also checked at 200% zoom. The full screen list and captures are in `docs/screenshots/`.
 
-The review uses the severity scale below. It describes usability impact, not the priority labels of a software issue tracker.
+The review uses the severity scale below. It describes usability impact, not the priority labels of a software issue tracker. A Simple-only follow-up reviewed three data fixtures in light and dark mode, owner and visitor views, and 320, 375, 768, 1280, and 1920 CSS-pixel widths (60 captures); owner preview/save/cancel, manage-menu copy feedback, keyboard navigation, reduced motion, increased contrast, forced colors, and print behavior were also checked.
 
 | Severity | Meaning |
 |---:|---|
@@ -37,6 +37,7 @@ The matrix evaluates each listed state against each of Nielsen's ten heuristics.
 | Rate limited, 429 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Server error, 500 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Dark-mode Creative template | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| Simple owner controls and guest/account visibility | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
 
 ## Findings and re-evaluation
 
@@ -44,8 +45,9 @@ The matrix evaluates each listed state against each of Nielsen's ten heuristics.
 |---|---|---:|---|---|
 | The undo window is intentionally brief, so a person who misses the ten-second window cannot restore the deleted portfolio. | Delete and undo; H3, user control and freedom | 2 | Kept at ten seconds because the product requirements explicitly define that period. The screen shows the remaining time, offers a direct Undo action, and the server provides signed recovery while the window is open. Scheduled cleanup also works when the browser closes. | `PortfolioRoutesTest::test_delete_can_be_undone_during_the_ten_second_window`; `PortfolioRoutesTest::test_delete_is_permanent_after_the_undo_window`; `PortfolioModelTest::test_purge_command_removes_portfolios_after_the_undo_period`; `docs/screenshots/mobile/delete-undo.png`; `docs/screenshots/desktop/delete-undo.png` |
 | An owner could close the deletion screen before client-side cleanup completed, leaving an expired soft-deleted row until another manual request. | Delete and undo; H1, visibility of system status | 2 | Added a ten-second Laravel scheduled purge and start the scheduler with Apache in the production container. When the server has already purged a record, the countdown treats the resulting 404 as successful completion instead of retrying indefinitely. | `PortfolioModelTest::test_purge_command_removes_portfolios_after_the_undo_period`; `docs/screenshots/mobile/delete-undo.png`; `docs/screenshots/desktop/delete-undo.png` |
+| The first Simple visual pass made the no-photo monogram taller than the requested 240px limit. | Public Simple template; H8, aesthetic and minimalist design | 1 | Set the generated monogram to a 240px square, while keeping uploaded portraits cropped as portrait images. Also raised the heading minimum and compact header labels to the requested sizes. | `tests/e2e/simple-review-visual.spec.js`; `docs/screenshots/simple/after/demo-minimal-1280-light-owner.png`; `docs/screenshots/simple/after/demo-minimal-375-dark-owner.png` |
 
-The first finding is an accepted requirement tradeoff and remains severity 2. The second finding is resolved. Neither blocks the HCI release gate. The browser captures are implementation evidence, not evidence that classmates have completed the usability study.
+The ten-second undo finding is an accepted requirement tradeoff and remains severity 2. The cleanup and monogram findings are resolved. No severity 3 or 4 finding remains. The browser captures are implementation evidence, not evidence that classmates have completed the usability study.
 
 ## Screen-by-screen heuristic notes
 

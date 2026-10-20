@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -18,6 +19,7 @@ DOCS = ROOT / "docs"
 SOURCE = DOCS / "SYSTEM_DOCUMENTATION.md"
 OUTPUT = DOCS / "export" / "PortGen_System_Documentation.docx"
 CROPS = ROOT / "tmp" / "documentation-screenshot-crops"
+SCREENSHOT_ROOT = Path(os.environ.get("PORTGEN_DOC_SCREENSHOT_ROOT", DOCS / "screenshots"))
 
 TRACKER_GROUPS = {
     "S": "Shneiderman's 8 Golden Rules",
@@ -256,7 +258,10 @@ def set_run_font(run, size=9):
 
 
 def image_path(relative: str) -> Path:
-    return (DOCS / relative).resolve()
+    path = Path(relative)
+    if path.parts and path.parts[0] == "screenshots":
+        return SCREENSHOT_ROOT.joinpath(*path.parts[1:]).resolve()
+    return (DOCS / path).resolve()
 
 
 def screenshot_viewport_path(relative: str, mode: str) -> Path:
@@ -461,8 +466,12 @@ def build_docx(source: str) -> None:
                 alt, relative = match.groups()
                 paragraph = doc.add_paragraph()
                 paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                width = 3.25 if "system-architecture" in relative else 5.0 if "portfolio-schema" in relative else 6.2
-                picture = paragraph.add_run().add_picture(str(image_path(relative)), width=Inches(width))
+                normalized_relative = relative.replace("\\", "/")
+                simple_review_image = "screenshots/simple/after/" in normalized_relative
+                mode = "mobile" if simple_review_image and "375-" in relative else "desktop"
+                width = 3.25 if "system-architecture" in relative else 5.0 if "portfolio-schema" in relative else 2.0 if simple_review_image and mode == "mobile" else 6.2
+                source = screenshot_viewport_path(relative, mode) if simple_review_image else image_path(relative)
+                picture = paragraph.add_run().add_picture(str(source), width=Inches(width))
                 picture._inline.docPr.set("descr", alt)
                 picture._inline.docPr.set("title", alt)
             index += 1
