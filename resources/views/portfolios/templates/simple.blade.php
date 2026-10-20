@@ -55,7 +55,7 @@
 
     <div class="pf-sections pf-sections--simple">
         @if ($hasAbout)
-            <x-pf.section id="about" title="About me" class="pf-about">
+            <x-pf.section id="about" title="About me" class="pf-about surface-raised">
                 <div class="pf-about__grid {{ count($aboutFacts) ? '' : 'pf-about__grid--single' }}">
                     @if (filled($about))
                         <div class="pf-about__copy">
@@ -65,7 +65,7 @@
                         </div>
                     @endif
                     @if (count($aboutFacts))
-                        <div class="pf-quick-facts surface-raised">
+                        <div class="pf-quick-facts surface-inset">
                             <p class="pf-quick-facts__heading">Quick facts</p>
                             <dl class="pf-facts">
                                 @foreach ($aboutFacts as $label => $value)
@@ -82,7 +82,7 @@
         @endif
 
         @if ($uniqueSkills->isNotEmpty())
-            <x-pf.section id="skills" title="Skills" class="pf-skills">
+            <x-pf.section id="skills" title="Skills" class="pf-skills surface-raised">
                 <ul class="pf-skills-grid pf-skills-grid--simple {{ $uniqueSkills->count() > 12 ? 'pf-skills-grid--dense' : '' }}">
                     @foreach ($uniqueSkills as $skill)
                         <li><x-pf.skill-chip :label="$skill" material="raised" /></li>
@@ -92,7 +92,7 @@
         @endif
 
         @if ($hasProjects)
-            <x-pf.section id="projects" title="Projects" class="pf-projects">
+            <x-pf.section id="projects" title="Projects" class="pf-projects surface-raised">
                 <ul class="pf-project-grid">
                     @foreach ($portfolio->projects as $index => $project)
                         <li>
@@ -114,7 +114,7 @@
         @endif
 
         @if (count($portfolio->work_experience ?? []))
-            <x-pf.section id="experience" title="Experience" class="pf-experience">
+            <x-pf.section id="experience" title="Experience" class="pf-experience surface-raised">
                 <ol class="pf-timeline">
                     @foreach ($portfolio->work_experience as $experience)
                         @php
@@ -136,7 +136,7 @@
         @endif
 
         @if (count($portfolio->education ?? []))
-            <x-pf.section id="education" title="Education" class="pf-education">
+            <x-pf.section id="education" title="Education" class="pf-education surface-raised">
                 <ol class="pf-timeline">
                     @foreach ($portfolio->education as $education)
                         <x-pf.timeline-item
@@ -150,7 +150,7 @@
         @endif
 
         @if ($hasContact)
-            <x-pf.section id="contact" title="Get in touch" class="pf-contact">
+            <x-pf.section id="contact" title="Get in touch" class="pf-contact surface-raised">
                 <p class="pf-contact__intro">For enquiries, use one of the options below.</p>
                 <x-pf.contact-links :links="$portfolio->social_links ?? []" :email="$portfolio->contact_email" :simple="true" />
             </x-pf.section>

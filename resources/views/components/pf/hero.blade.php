@@ -11,7 +11,7 @@
     'material' => null,
 ])
 
-<section id="home" class="pf-hero" aria-label="Introduction">
+<section id="home" class="pf-hero {{ $material === 'raised' ? 'surface-raised' : '' }}" aria-label="Introduction">
     <div class="pf-hero__copy">
         <p class="pf-hero__eyebrow">Hi, I’m</p>
         <h1>{{ $name }}</h1>

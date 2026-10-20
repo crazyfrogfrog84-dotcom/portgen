@@ -2154,7 +2154,7 @@ img.pf-avatar {
     overflow: visible;
     border-radius: 0.75rem;
     background: var(--surface);
-    box-shadow: var(--elevation-0);
+    box-shadow: var(--shadow-inset);
     padding: 0.15rem;
 }
 
@@ -2166,7 +2166,7 @@ img.pf-avatar {
     border: 1px solid var(--border-strong);
     border-radius: 0.55rem;
     background: var(--surface);
-    box-shadow: var(--elevation-0);
+    box-shadow: var(--shadow-raised);
     color: var(--text);
     padding-inline: 0.45rem;
     font-size: 0.875rem;
@@ -2180,7 +2180,7 @@ img.pf-avatar {
     border-color: var(--border-strong);
     border-bottom: 3px solid var(--border-strong);
     background: var(--accent);
-    box-shadow: var(--elevation-2);
+    box-shadow: var(--shadow-inset);
     color: var(--accent-contrast);
 }
 
@@ -2203,7 +2203,7 @@ img.pf-avatar {
     border: 1px solid var(--border-strong);
     border-radius: 0.65rem;
     background: var(--surface);
-    box-shadow: var(--elevation-0);
+    box-shadow: var(--shadow-raised);
     color: var(--text);
     padding-inline: 0.7rem;
     font-size: 0.875rem;
@@ -2233,7 +2233,7 @@ img.pf-avatar {
     border: 1px solid var(--border-strong);
     border-radius: 0.65rem;
     background: var(--surface-raised);
-    box-shadow: var(--elevation-0);
+    box-shadow: var(--shadow-raised);
     color: var(--text);
 }
 
@@ -2286,6 +2286,14 @@ img.pf-avatar {
     color: var(--accent-contrast);
 }
 
+.pf-page[data-template="simple"] .pf-site-header__tools {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-surface);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-raised);
+    padding: 0.3rem;
+}
+
 .pf-page[data-template="simple"] .pf-ready-banner {
     display: flex;
     width: 100%;
@@ -2322,8 +2330,11 @@ img.pf-avatar {
     grid-template-columns: minmax(0, 1fr) minmax(0, 15rem);
     align-items: center;
     gap: clamp(2rem, 6vw, 4.5rem);
-    border-bottom: 1px solid var(--border);
-    padding-block: clamp(2rem, 4vw, 3rem);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-surface);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-raised);
+    padding: clamp(2rem, 4vw, 3rem) clamp(1.25rem, 4vw, 2.5rem);
 }
 
 .pf-page[data-template="simple"] .pf-template-content--simple .pf-hero__copy {
@@ -2373,7 +2384,7 @@ img.pf-avatar {
     border: 1px solid var(--border-strong);
     border-radius: 0.65rem;
     background: var(--accent);
-    box-shadow: var(--elevation-0);
+    box-shadow: var(--shadow-raised);
     color: var(--accent-contrast);
 }
 
@@ -2417,16 +2428,15 @@ img.pf-avatar {
 }
 
 .pf-page[data-template="simple"] .pf-template-content--simple .pf-section {
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    padding: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-surface);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-raised);
+    padding: 1.75rem;
 }
 
 .pf-page[data-template="simple"] .pf-template-content--simple .pf-section:not(:last-child) {
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 3rem;
-    padding-bottom: 3rem;
+    margin-bottom: 4rem;
 }
 
 .pf-page[data-template="simple"] .pf-template-content--simple .pf-section > h2 {
@@ -2457,8 +2467,8 @@ img.pf-avatar {
 .pf-page[data-template="simple"] .pf-template-content--simple .pf-quick-facts {
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-surface);
-    background: var(--surface-raised);
-    box-shadow: var(--elevation-1);
+    background: var(--surface-inset);
+    box-shadow: var(--shadow-inset);
     padding: 1.25rem;
 }
 
@@ -2540,7 +2550,7 @@ img.pf-avatar {
     border: 1px solid var(--border-strong);
     border-radius: var(--radius-surface);
     background: var(--surface-raised);
-    box-shadow: var(--elevation-1);
+    box-shadow: var(--shadow-raised);
     padding: 1rem;
 }
 
@@ -2745,6 +2755,7 @@ img.pf-avatar {
         grid-template-columns: minmax(0, 1fr);
         gap: 1.25rem;
         padding-block: 2rem;
+        padding-inline: 1.25rem;
     }
 
     .pf-page[data-template="simple"] .pf-template-content--simple .pf-avatar--portrait {
@@ -2758,8 +2769,11 @@ img.pf-avatar {
     }
 
     .pf-page[data-template="simple"] .pf-template-content--simple .pf-section:not(:last-child) {
-        margin-bottom: 2rem;
-        padding-bottom: 2rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .pf-page[data-template="simple"] .pf-template-content--simple .pf-section {
+        padding: 1.25rem;
     }
 
     .pf-page[data-template="simple"] .pf-template-content--simple .pf-about__grid {
