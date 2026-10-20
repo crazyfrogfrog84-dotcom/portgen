@@ -4,13 +4,13 @@
 
 **Project type:** School software system documentation
 
-**Live URL:** Not deployed
+**Live URL:** [https://portgen-m1uh-if1e.onrender.com](https://portgen-m1uh-if1e.onrender.com)
 
 **Target audience:** Students, freelancers, and job seekers
 
 **Author:** PortGen project implementation
 
-**Date:** 2026-10-19
+**Date:** 2026-10-20
 
 **Version:** 0.1.0
 
@@ -20,19 +20,19 @@ PortGen is a Laravel application for building and publishing a personal portfoli
 
 ### 1.1 Problem and solution
 
-Students and early-career professionals often have information spread across documents and profile sites. A portfolio can be time-consuming to format and keep consistent. PortGen collects a person's introduction, education, work experience, skills, projects, and social links in one guided form. The person chooses a responsive presentation and receives a public portfolio URL plus a separate signed link for private management.
+Students and early-career professionals often have information spread across documents and profile sites. A portfolio can be time-consuming to format and keep consistent. PortGen collects a person's introduction, education, work experience, skills, projects, and social links in one guided form. The person chooses a responsive presentation and receives a public portfolio URL. Account owners manage portfolios from their dashboard; guests receive a separate signed private link.
 
 ### 1.2 Objectives
 
 1. Collect structured portfolio information in a guided, recoverable flow.
 2. Render the same information with Simple, Modern, or Creative presentation styles.
-3. Let a portfolio owner edit, change the template, and delete the portfolio without requiring an account.
+3. Let account owners manage portfolios from a dashboard and let guests manage portfolios through a signed private link.
 4. Support keyboard operation, responsive layouts, clear feedback, and a dark color scheme.
 5. Keep database constraints, request validation, automated browser checks, and HCI evidence in the project repository.
 
 ### 1.3 Scope and limits
 
-The implementation includes portfolio creation, template selection, public viewing, signed-link management, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment configuration for Render. It does not include accounts, password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
+The implementation includes portfolio creation, template selection, public viewing, session-based registration and login, an account dashboard, signed guest-link management, portfolio claiming, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment configuration for Render. It does not include password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
 
 Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set currently passes `composer audit --locked`. The deployment branch now defines a free Render web service and a dedicated Render Free Postgres database for demonstration use. Render resources and live health checks are still pending. The database expires after 30 days, followed by a 14-day upgrade grace period before deletion. See section 8 for the release configuration and current status.
 
@@ -58,7 +58,7 @@ The student path permits empty education and work sections while requiring at le
 
 ### 3.1 Architecture
 
-The browser submits validated portfolio fields to Laravel. The controller and Eloquent model persist structured values in PostgreSQL JSONB columns. Blade renders the public page from the chosen template. A signed URL provides private owner access without an account. On Render, the browser's signed purge request and the Laravel scheduler remove a deleted record when its ten-second undo period ends.
+The browser submits validated portfolio fields to Laravel. The controller and Eloquent model persist structured values in PostgreSQL JSONB columns. Blade renders the public page from the chosen template. Authenticated owners manage account-owned portfolios through their dashboard; guests use a signed private link. On Render, the browser's signed purge request and the Laravel scheduler remove a deleted record when its ten-second undo period ends.
 
 <!-- PAGEBREAK -->
 
@@ -80,7 +80,7 @@ The user-facing application is a modular Laravel monolith. The controller handle
 | Browser checks | Playwright 1.64 and axe-core 4.14 | Keyboard journey, responsive screenshots, touch target checks, and accessibility audits. |
 | Container | Docker, PHP 8.3 Apache on Render | Multi-stage image configuration is committed; the Render image build runs in GitHub Actions. |
 | Hosting | Render web service with Render Postgres | PostgreSQL stores portfolio data, sessions, and cache. The Free database is temporary demo storage. |
-| CI | GitHub Actions | Workflow defines PHP, PostgreSQL, Docker build, browser, and HCI artifact steps. The deployment branch's current run is pending. |
+| CI | GitHub Actions | Pull requests and main run PHP, PostgreSQL, Docker build, browser, and HCI artifact checks before Render deploys. |
 
 **Table 3. Main workflow stages**
 
@@ -88,8 +88,8 @@ The user-facing application is a modular Laravel monolith. The controller handle
 |---:|---|---|
 | 1 | Enter portfolio details | Form Request validates fields; the app stores a draft locally and shows inline feedback. |
 | 2 | Compare and choose a template | The app previews the user's information and saves the selected supported template through a signed route. |
-| 3 | Publish and share | The app displays the public URL and a private signed management URL with a copy action. |
-| 4 | Edit or change a template | The owner opens the private signed link and updates the same portfolio record. |
+| 3 | Publish and share | Account owners find portfolios in My portfolios; guests receive a private signed management URL with a copy action. |
+| 4 | Edit or change a template | An account owner uses the dashboard or a guest opens the private signed link to update the same portfolio record. |
 | 5 | Delete or undo | The app soft-deletes the record, allows signed recovery for ten seconds, and sends a signed purge request when the undo period ends. |
 
 ## 4. Database schema and data dictionary
@@ -100,13 +100,14 @@ The user-facing application is a modular Laravel monolith. The controller handle
 
 ![Portfolio entity diagram](diagrams/portfolio-schema.png)
 
-There is one application-owned `portfolios` entity. The structured content fields store arrays as JSONB in PostgreSQL and are cast to arrays by Eloquent. The table has no foreign-key relationship because portfolios do not require user accounts.
+Portfolio content is stored in `portfolios`; structured fields use JSONB in PostgreSQL and are cast to arrays by Eloquent. Nullable `user_id` links account-owned portfolios to `users`. Guest portfolios keep `user_id` null and remain manageable through their signed private link until claimed.
 
 **Table 4. `portfolios` data dictionary**
 
 | Column | PostgreSQL type | Constraint | Description |
 |---|---|---|---|
 | `id` | uuid | Primary key | Application-generated portfolio identifier. |
+| `user_id` | bigint | Nullable foreign key to `users.id`; null on user deletion | Account owner; null identifies a guest-owned portfolio. |
 | `slug` | varchar(10) | Unique, required | Random ten-character route key used in public URLs. |
 | `full_name` | varchar(120) | Required | Name displayed on the portfolio. |
 | `headline` | varchar(180) | Required | Short professional tagline. |
@@ -134,17 +135,22 @@ PostgreSQL enforces the template choice with a CHECK constraint. SQLite migratio
 |---|---|---|---|
 | GET | `/` | Redirect to the portfolio form | Public |
 | GET | `/portfolios/create` | Open the creation flow | Public |
-| POST | `/store` | Validate and create the portfolio | Public, rate limited |
-| GET | `/portfolio/{slug}/select-template` | Choose a presentation | Signed |
-| POST | `/portfolio/{slug}/save-template` | Save an allowed template | Signed, rate limited |
+| GET, POST | `/login` | Show the login form or authenticate a user | Guest only; POST rate limited |
+| GET, POST | `/register` | Show the registration form or create an account | Guest only; POST rate limited |
+| POST | `/logout` | End the current session | Authenticated |
+| GET | `/my-portfolios` | List the authenticated user's portfolios | Authenticated |
+| POST | `/store` | Validate and create the portfolio | Public, rate limited; authenticated creation assigns the owner |
+| POST | `/manage/{slug}/claim` | Claim an unclaimed guest portfolio | Authenticated owner of signed guest link |
+| GET | `/portfolio/{slug}/select-template` | Choose a presentation | Signed guest or account owner |
+| POST | `/portfolio/{slug}/save-template` | Save an allowed template | Signed guest or account owner; rate limited |
 | GET | `/p/{slug}` | Display the public portfolio | Public |
-| GET | `/manage/{slug}` | Open owner controls | Signed |
-| GET | `/manage/{slug}/edit` | Edit the portfolio | Signed |
-| PUT | `/manage/{slug}` | Validate and update content | Signed, rate limited |
-| DELETE | `/manage/{slug}` | Begin the delete and undo flow | Signed, rate limited |
-| GET | `/manage/{slug}/deleted` | Display the deletion countdown | Signed |
-| POST | `/manage/{slug}/undo` | Restore during the undo window | Signed, rate limited |
-| DELETE | `/manage/{slug}/purge` | Purge after the undo period | Signed, rate limited |
+| GET | `/manage/{slug}` | Open owner controls | Signed guest or account owner |
+| GET | `/manage/{slug}/edit` | Edit the portfolio | Signed guest or account owner |
+| PUT | `/manage/{slug}` | Validate and update content | Signed guest or account owner; rate limited |
+| DELETE | `/manage/{slug}` | Begin the delete and undo flow | Signed guest or account owner; rate limited |
+| GET | `/manage/{slug}/deleted` | Display the deletion countdown | Signed guest or account owner |
+| POST | `/manage/{slug}/undo` | Restore during the undo window | Signed guest or account owner; rate limited |
+| DELETE | `/manage/{slug}/purge` | Purge after the undo period | Signed guest or account owner; rate limited |
 | GET | `/help` | Read help and keyboard shortcuts | Public |
 | GET | `/up` | Health check | Public health endpoint |
 
@@ -154,7 +160,7 @@ Error preview routes exist only in local and test environments. The production r
 
 `PortfolioController` implements create, store, template selection, template save, public show, manage, edit, update, delete, deleted-state display, undo, and purge. `StorePortfolioRequest` and `UpdatePortfolioRequest` share portfolio rules. `SaveTemplateRequest` restricts template values. URLs accept only HTTP and HTTPS schemes. User content is rendered through escaped Blade expressions.
 
-Owner management is a bearer-link model. Laravel signed URLs without an expiry protect owner routes; anyone who obtains the private link can manage that portfolio. The completion screen explains the link, shows the public URL separately, and provides a copy control. There is no account-based recovery if the owner loses the private link.
+Owner access uses either authenticated account ownership or a signed guest link. A valid guest owner can claim an unclaimed portfolio; claiming assigns its `user_id`, after which the old guest link no longer grants management access. Guest owners should retain their private link until they claim the portfolio. Portfolio ownership is assigned in server-side code rather than mass-assigned input.
 
 Security middleware adds Content Security Policy, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`. `APP_DEBUG` is set to false in Render production configuration. Production also requires a real `APP_KEY` in the hosting secret store.
 
@@ -211,6 +217,32 @@ Mobile: `docs/screenshots/mobile/template-simple.png`
 Desktop: `docs/screenshots/desktop/template-simple.png`
 
 HCI evidence: S1, H4, H8, C1, C2, C3, V1, V2, V4, V5, V8.
+
+#### Simple clarity-first design
+
+Simple is the readability baseline for the student persona, including a portfolio with only a name, headline, About text, and one skill. The same hierarchy expands for a rich profile: the header and hero share one 1100px content edge; the hero pairs a short introduction with a portrait; optional sections and their navigation links appear only when data exists. The About section adds a facts list only when the portfolio supplies useful facts. Project cards use a three-column desktop grid and collapse for narrow screens.
+
+The green palette and material colors are defined in `resources/css/tokens.css` for light, dark, and system modes. Simple uses monochromatic green, with raised and inset surfaces separated by tuned shadow pairs and 18px surface corners. Shadows decorate surfaces only. A one-pixel border, high-contrast text, solid primary action, visible selection check or underline, and token-based focus ring preserve meaning when shadows are removed. Increased-contrast and forced-colors modes use two-pixel borders without shadows. See [the neumorphism limitation and mitigation](DECISIONS.md#known-limitation-of-neumorphism-and-our-mitigation).
+
+Owners see the shared header's template chooser, Manage menu, and theme control; visitors see no owner actions and cannot use `?preview=` to change the saved template. Template choices preview without writing to the database until Save; Cancel returns to the saved style. The menu links to edit and manage pages, and gives a signed-link copy action only to guest owners. Account owners get My portfolios. These actions retain normal links and forms, and the header controls are hidden in print.
+
+The synthetic minimal fixture uses a 240px patterned monogram instead of an empty portrait block. The rich fixture uses locally generated artwork, so the supplied design reference's photo and copy are not reused.
+
+**Figure 6a. Minimal Simple portfolio with owner controls**
+
+![Minimal Simple portfolio at desktop width](screenshots/simple/after/demo-minimal-1280-light-owner.png)
+
+**Figure 6b. Rich Simple portfolio with raised cards and inset active controls**
+
+![Rich Simple portfolio at desktop width](screenshots/simple/after/demo-rich-1280-dark-owner.png)
+
+**Figure 6c. Simple owner header and stacked layout at mobile width**
+
+![Simple owner header at mobile width](screenshots/simple/after/demo-minimal-375-light-owner.png)
+
+The Playwright visual pass captured 60 combinations (three fixtures, five widths, two color modes, and owner/visitor views). All 60 axe runs reported zero serious or critical violations, and all 60 layouts passed the overflow check. The committed browser suite plus Simple owner and visual-review specs passed 6 tests; the live-deployment smoke was skipped locally. The focused Simple template spec checks keyboard selection, Escape, increased contrast, forced colors, reduced motion, and print visibility. `npm run build` passed, and `npm audit --omit=optional` reported zero vulnerabilities.
+
+The full PHP suite and its `HCI_RELEASE=1` gate both exited successfully. The PHP 8.5 workstation reported 66 deprecation-marked cases and one ordinary pass, with 1,584 assertions in the regular run and 1,648 in the strict HCI run; these deprecations identify the existing MySQL SSL option constant and do not fail the suite. The strict tracker gate verified 64 of 64 HCI rows.
 
 **Figure 7. Public Modern template**
 
@@ -502,7 +534,7 @@ This walkthrough applies the student, freelancer, and job-seeker personas to the
 | Persona | Task path reviewed | Expected user questions | Inspection result and limitation |
 |---|---|---|---|
 | Student | Add name, headline, introduction, skills, and optional education or course projects; select a template; copy the public URL. | “What information is required?”, “Can I leave work experience empty?”, “How do I share?” | Field guidance, optional section labels, a required skill message, template previews, and a completion screen answer the main questions. A classmate should validate terminology and whether the required fields feel reasonable. |
-| Freelancer | Add a specialty and projects, preview styles, publish, save the private management link, and later update a project. | “Will my work look professional?”, “Which link is public?”, “Can I edit after sharing?” | The three previews use the same profile data; public and private links have separate labels; the private link opens edit and template controls. The owner must retain the signed link because there is no account recovery. |
+| Freelancer | Add a specialty and projects, preview styles, publish, and later update a project. | “Will my work look professional?”, “Which link is public?”, “Can I edit after sharing?” | The three previews use the same profile data; public and private links have separate labels; the private link opens guest edit and template controls, while account owners use My portfolios. |
 | Job seeker | Add experience and skills, use keyboard navigation, publish a focused page, and test deletion recovery. | “Where am I in the process?”, “Can I correct a mistake?”, “Can I undo a delete?” | The stepper, field validation, keyboard shortcuts, edit page, and ten-second undo provide visible controls. Ten seconds may be too brief for some users and is an explicit study question. |
 
 ### 7.3 Usability test plan
@@ -540,9 +572,9 @@ Render's Blueprint supplies the generated Postgres connection string without com
 
 ### 8.2 Deployment status and blockers
 
-The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`, and the deployment branch is pushed as `codex/render-deployment`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; neither resource has been created yet. The latest branch CI run is pending. The live URL and health checks remain unverified.
+The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; the service is live and deploys from `main` at `https://portgen-m1uh-if1e.onrender.com`. Direct checks on 2026-10-20 returned HTTP 200 for `/up`, `/portfolios/create`, and `/p/portgen001`. The latest main CI run passed. Its following Live smoke run failed during health/page preflight before the create-and-render test; later direct checks passed.
 
-Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` now reports no advisories. The Render service requires a Laravel-compatible `APP_KEY` stored as a secret and binds the database connection through the Blueprint. Publication still depends on passing the CI gate, creating the free database and web service, then passing the additive migration and live smoke checks. No production database migration has been attempted. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
+Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` reports no advisories. The Render service uses a generated `APP_KEY`, binds its database through the Blueprint, and deploys after CI checks pass. Production schema changes use additive migrations only. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
 
 ## 9. Testing and technical achievements
 
@@ -552,22 +584,23 @@ Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer
 
 | Command | Result |
 |---|---|
-| `php artisan test --compact` | Exit code 0; 573 assertions; 37 deprecation-marked tests and 1 passing test in the compact PHP 8.5 output. |
+| `php artisan test` | Exit code 0; 1,584 assertions; 66 deprecation-marked cases and 1 ordinary pass under PHP 8.5. |
 | `./vendor/bin/pint --test` | Passed. |
 | `npm run build` | Passed with Vite 8.3.4. |
 | `npm audit --omit=optional` | Zero vulnerabilities. |
-| `npm run test:e2e` | 1 Playwright test passed; captured 17 states at mobile and desktop sizes. |
+| Checked-in browser suite plus Simple-focused specs | 6 passed; 1 live-only smoke test skipped locally. The separate Simple visual run audited all 60 viewport/theme/owner combinations. |
 | `php artisan schedule:list` | Shows `portfolios:purge-expired` every ten seconds. |
-| `HCI_RELEASE=1 php artisan test --compact` | Exit code 0; 657 assertions; the tracker release requirement passes. PHP 8.5 reports 37 deprecation-marked tests and 1 passing test in the compact summary. |
+| `HCI_RELEASE=1 php artisan test` | Exit code 0; 1,648 assertions; all 64 HCI tracker rows verified. |
 | `composer audit --locked` | Exit code 0; no security vulnerability advisories found after upgrading to Laravel 12.70.0. |
+| `php scripts/check-secrets.php --worktree` | Passed. |
 
-The workstation uses PHP 8.5, not the required PHP 8.3 runtime, so PHPUnit reports deprecations. CI is configured to use PHP 8.3 and PostgreSQL 16 and to build the Render image. PostgreSQL migration rollback/reapply, GitHub CI for this branch, and the container image build remain pending.
+The workstation uses PHP 8.5, not the required PHP 8.3 runtime, so PHPUnit reports deprecations from the existing MySQL SSL option constant. CI uses PHP 8.3 and PostgreSQL 16 and builds the Render image.
 
 ### 9.2 Database, browser, and security checks
 
-Feature tests cover portfolio validation, signed access, template constraints, escaping, rate limits, demo seeding, deletion/undo, and purge behavior. Model tests cover UUID and slug behavior, mass-assignment protection, uniqueness, JSON arrays, template constraints, seeder idempotence, and scheduled cleanup. Browser checks use a dedicated SQLite test database and test keyboard flow, draft state, responsive widths, dark mode, and error screens. CI declares an isolated PostgreSQL 16 database and an explicit test-only guard; these PostgreSQL jobs remain configured but unexecuted on the workstation.
+Feature tests cover portfolio validation, session registration/login/logout, ownership and claiming, dashboard behavior, signed guest access, template controls, escaping, rate limits, demo seeding, deletion/undo, and purge behavior. Model tests cover UUID and slug behavior, mass-assignment protection, uniqueness, JSON arrays, template constraints, seeder idempotence, and scheduled cleanup. Browser checks cover keyboard flow, draft state, responsive widths, theme modes, error screens, and the Simple owner controls; CI runs the database gates on an isolated PostgreSQL 16 service.
 
-The implementation includes CSRF, rate limits on state-changing routes, signed owner URLs, strict URL schemes, escaped user content, friendly error views, security headers, an explicit mass-assignment allowlist, and a repository secret scanner. The signed owner URL is a bearer credential and should be kept private. No live proxy response, including a 502, was available to inspect because no service is deployed; the smoke workflow is configured to check the service endpoints after a future deployment.
+The implementation includes CSRF, rate limits on state-changing routes, account ownership and signed guest URLs, strict URL schemes, escaped user content, friendly error views, security headers, an explicit mass-assignment allowlist, and a repository secret scanner. A guest signed URL is a bearer credential and should be kept private. The live smoke workflow checks the service endpoints and then creates and renders a throwaway portfolio after successful CI.
 
 <!-- PAGEBREAK -->
 ## 10. User guide
@@ -582,7 +615,7 @@ The implementation includes CSRF, rate limits on state-changing routes, signed o
 
 ### 10.2 Manage and edit
 
-Open the private signed link to view the portfolio controls. Choose Edit portfolio to update details or Change template to preview another style. Anyone who has the private link can manage the portfolio, so do not share it publicly.
+Open My portfolios to manage an account-owned portfolio. A guest can open the private signed link to view its controls, edit details, or preview a template. Anyone who has a guest link can manage that portfolio, so do not share it publicly.
 
 ### 10.3 Delete and undo
 
@@ -608,7 +641,7 @@ Never point test commands or `migrate:fresh` at a production database. For a sup
 ### 11.2 Future work
 
 - Keep Laravel 12 dependencies patched and plan the Laravel 13 upgrade before Laravel 12's security-fix date.
-- Create the Render service `portgen-m1uh`, pass the live smoke checks, and record the confirmed URL.
+- Keep the Render service `portgen-m1uh` healthy and keep the live create-and-render smoke checks green.
 - Upgrade or export the Render Free Postgres database before its 30-day expiration and 14-day grace period end if any data must be retained.
 - Conduct the five-task classmate study and add real observation and SUS results.
 - Consider profile photos and project images only after launch readiness; validate type, size, alt text, preview, storage, and deletion flows.

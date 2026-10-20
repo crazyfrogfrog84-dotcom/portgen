@@ -2,7 +2,7 @@
     $about = trim((string) $portfolio->about_me);
     $aboutExcerptText = trim(preg_replace('/\s+/u', ' ', $about) ?? '');
     $headline = trim((string) $portfolio->headline);
-    $contactCandidate = preg_replace('/^(?:email|phone|telephone|contact|call|text)\s*[:\-]?\s*/iu', '', $aboutExcerptText) ?? $aboutExcerptText;
+    $contactCandidate = preg_replace('/^(?:e-?mail|phone|telephone|contact(?:\s+me)?|call|text)(?:\s+(?:me\s+)?(?:at|on))?\s*[:\-]?\s*/iu', '', $aboutExcerptText) ?? $aboutExcerptText;
     $isContactOnly = preg_match('/^[\w.+-]+@[\w.-]+\.[a-z]{2,}$/iu', $contactCandidate)
         || preg_match('/^\+?[\d\s().-]{7,}$/u', $contactCandidate);
     $aboutExcerpt = $aboutExcerptText !== ''
@@ -121,7 +121,8 @@
                             $period = trim(implode(' – ', array_filter([
                                 $formatDate($experience['start_date'] ?? ''),
                                 ($experience['end_date'] ?? '') === 'Present' ? 'Present' : $formatDate($experience['end_date'] ?? ''),
-                            ])));
+                            ], fn ($value) => $value !== '')));
+                            $period = str_replace(' – ', ' - ', $period);
                         @endphp
                         <x-pf.timeline-item
                             :title="$experience['role'] ?? ''"

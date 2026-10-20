@@ -9,12 +9,12 @@
     @endphp
     <div class="pf-page" data-template="{{ $template }}" data-theme="system" data-portfolio-slug="{{ $portfolio->slug }}">
         @if ($showReadyBanner)
-            <aside class="pf-ready-banner surface-raised" aria-label="Portfolio ready" data-ready-banner data-copy-context>
-                <p>Your portfolio is ready.</p>
+            <aside class="pf-ready-banner {{ $template === 'simple' ? '' : 'surface-raised' }}" aria-label="Portfolio ready" data-ready-banner data-copy-context>
                 @if ($isAccountOwner)
+                    <p>Your portfolio is ready. Find it in My portfolios when you return.</p>
                     <a class="button-secondary" href="{{ route('dashboard') }}">Open My portfolios</a>
                 @else
-                    <span>Copy private link.</span>
+                    <p>Your portfolio is ready. Save your private link to manage it later.</p>
                     <button class="button-secondary surface-raised" type="button" data-copy-link="{{ $ownerManageUrl }}">Copy private link</button>
                 @endif
                 <span class="pf-copy-status" data-copy-status role="status" aria-live="polite"></span>
@@ -28,7 +28,7 @@
                     <span class="pf-brand__name">{{ $portfolio->full_name }}</span>
                 </a>
                 <x-pf.nav :items="$navItems" />
-                <div class="pf-site-header__tools">
+                <div class="pf-site-header__tools {{ $isPortfolioOwner ? 'pf-site-header__tools--owner' : '' }}">
                     @if ($isPortfolioOwner)
                         <x-pf.owner-toolbar
                             :portfolio="$portfolio"
