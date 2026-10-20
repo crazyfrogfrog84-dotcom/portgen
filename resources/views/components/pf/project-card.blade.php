@@ -8,10 +8,11 @@
     'imageWidth' => null,
     'imageHeight' => null,
     'simple' => false,
+    'creative' => false,
     'material' => null,
 ])
 
-<article class="pf-project-card {{ $simple || $material === 'raised' ? 'surface-raised' : '' }} {{ $simple ? 'pf-project-card--simple' : '' }}">
+<article class="pf-project-card {{ $simple || $material === 'raised' ? 'surface-raised' : '' }} {{ $simple ? 'pf-project-card--simple' : '' }} {{ $creative ? 'pf-project-card--creative' : '' }}">
     @if ($imageUrl)
         <img class="pf-project-card__image" src="{{ $imageUrl }}" alt="{{ $imageAlt }}" width="{{ $imageWidth }}" height="{{ $imageHeight }}" loading="lazy">
     @else
@@ -29,6 +30,6 @@
         </ul>
     @endif
     @if ($url)
-        <a class="pf-project-card__link pf-external-link" href="{{ $url }}" rel="noopener noreferrer" @if ($simple) aria-label="View project: {{ $title }}" data-stretched-link @endif>View project <span class="pf-external-link__icon" aria-hidden="true">↗</span><span class="sr-only"> (external link)</span></a>
+        <a class="pf-project-card__link pf-external-link" href="{{ $url }}" rel="noopener noreferrer" @if ($simple) aria-label="View project: {{ $title }}" data-stretched-link @endif>View project @if ($creative)<x-pf.icon name="external" class="pf-external-link__svg" />@else<span class="pf-external-link__icon" aria-hidden="true">↗</span>@endif<span class="sr-only"> (external link)</span></a>
     @endif
 </article>

@@ -10,7 +10,7 @@
 
         <form method="POST" action="{{ $saveTemplateUrl }}" class="grid gap-5 lg:grid-cols-3" data-template-form>
             @csrf
-            @foreach (['Simple' => ['A calm, monochromatic layout with generous space.', 'theme-simple'], 'Modern' => ['A focused, cool palette with clear section cards.', 'theme-modern'], 'Creative' => ['A warm, expressive layout with a bold accent.', 'theme-creative']] as $choice => [$description, $theme])
+            @foreach (['Simple' => ['A calm, monochromatic layout with generous space.', 'theme-simple'], 'Modern' => ['A focused, cool palette with clear section cards.', 'theme-modern'], 'Creative' => ['A tactile paper layout with playful icons and cobalt details.', 'theme-creative']] as $choice => [$description, $theme])
                 <label class="template-card">
                     <span class="flex items-start gap-3">
                         <input class="mt-1 min-h-5 min-w-5" type="radio" name="template_choice" value="{{ $choice }}" @checked(old('template_choice', $portfolio->template_choice) === $choice) required>
