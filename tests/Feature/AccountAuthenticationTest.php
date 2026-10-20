@@ -59,6 +59,20 @@ class AccountAuthenticationTest extends TestCase
         $this->assertDatabaseCount('users', 1);
     }
 
+    public function test_registration_throttle_is_independent_of_other_write_routes(): void
+    {
+        for ($attempt = 0; $attempt < 11; $attempt++) {
+            $this->post(route('portfolios.store'), [])->assertRedirect();
+        }
+
+        $this->post(route('register.store'), [
+            'name' => 'Casey Example', 'email' => 'casey@example.test', 'password' => 'long-enough-password',
+            'password_confirmation' => 'long-enough-password',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('users', ['email' => 'casey@example.test']);
+    }
+
     public function test_login_uses_one_generic_error_for_unknown_email_and_wrong_password_and_remembers_email(): void
     {
         $user = User::factory()->create(['email' => 'casey@example.test', 'password' => 'correct-password']);

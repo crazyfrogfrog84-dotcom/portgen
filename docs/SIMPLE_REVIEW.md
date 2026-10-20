@@ -24,7 +24,7 @@ Round 0 captures are in `docs/screenshots/simple/before/`. Final captures are in
 ## Evidence
 
 - Full screenshot, axe, and overflow matrix: `tests/e2e/simple-review-visual.spec.js`.
-- Owner, keyboard, contrast, reduced-motion, and print checks: `tests/e2e/simple-template.spec.js` and `tests/e2e/simple-owner-controls.spec.js`.
+- Owner, keyboard, contrast, reduced-motion, and print checks: `tests/e2e/simple-template.spec.js` and `tests/e2e/owner-controls-simple.spec.js`.
 - Increased-contrast screenshot: `docs/screenshots/simple/demo-rich-1280-contrast-more.png`.
 - The minimal and rich owner captures at 375px/1280px in light/dark mode are committed under `docs/screenshots/simple/after/`.
 - The final browser run passed 6 checked-in and Simple-focused tests, skipped the live-only smoke test, and completed 60 axe/overflow audits; `php artisan test` and the strict HCI release gate exited successfully.

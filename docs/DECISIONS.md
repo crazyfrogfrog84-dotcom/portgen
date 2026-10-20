@@ -41,6 +41,7 @@
 | 2026-10-20 | Preview portfolio templates through a query parameter and persist only on explicit Save. | Owners can compare the three templates on the public page, while visitors always see the saved template and cannot alter it with a query string. |
 | 2026-10-20 | Give Simple a neumorphic surface style through light/dark material tokens; reserve glassmorphism for Modern and paper-and-tape skeuomorphism for Creative. | Material changes affect surfaces and decoration only; shared sections, navigation, controls, and interactions remain consistent. |
 | 2026-10-20 | Use a clarity-first Simple layout with one content width, a balanced hero, minimal empty states, and owner controls in the shared header. | The supplied image is a hierarchy and mood reference; a 240px monogram and content-dependent sections keep the same layout composed for sparse and rich portfolios. Neumorphic shadows remain decorative and retain contrast borders and keyboard focus. |
+| 2026-10-20 | Namespace the registration throttle separately from general portfolio write throttles. | Laravel's unprefixed route throttle key is shared by routes from the same IP; unrelated portfolio actions must not consume the signup allowance. The 10-per-minute registration limit stays unchanged. |
 
 ## Known limitation of neumorphism and our mitigation
 
