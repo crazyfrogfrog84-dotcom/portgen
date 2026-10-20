@@ -1,6 +1,6 @@
 # PORTGEN
 
-## Dynamic Online Portfolio Generator
+## Online Portfolio Template Generator
 
 **Project type:** School software system documentation
 
@@ -10,11 +10,23 @@
 
 **Author:** PortGen project implementation
 
-**Date:** 2026-10-20
+**Date:** 2026-10-21
 
 **Version:** 0.1.0
 
-PortGen is a Laravel application for building and publishing a personal portfolio from one structured form. This paper documents the implemented system, the evidence gathered from automated checks and expert inspection, and the Render deployment plan. The public source repository contains the application, design records, and HCI evidence. No classmates have taken part in the usability study yet.
+PortGen is a Laravel application for building and publishing a personal portfolio from one structured form. This paper documents the implemented system, its database and deployment, and the evidence gathered from automated checks and expert inspection. The public source repository contains the application, design records, and HCI evidence. No classmates have taken part in the usability study yet.
+
+## Project submission summary
+
+This report follows the project submission requirements and provides the full system, database, design, evaluation, deployment, and user documentation.
+
+- **Project title and description:** Online Portfolio Template Generator (PortGen). Users enter portfolio details, save them online, choose one of three designs, publish a shareable page, and manage or edit it later.
+- **Technology stack:** Laravel 12.70.0, PHP 8.3, Blade, Tailwind CSS 4, JavaScript, Vite 8, PostgreSQL 16, Docker, Apache, Playwright, and axe-core.
+- **Hosting and database:** Render Docker web service at [https://portgen-m1uh-if1e.onrender.com](https://portgen-m1uh-if1e.onrender.com) with Render-managed PostgreSQL 16; CI uses an isolated PostgreSQL service.
+- **Database structure:** `portfolios` stores portfolio fields; `portfolio_images` stores processed profile and project images; nullable `user_id` associates an account owner. Section 4 includes the data dictionary.
+- **Templates and screenshots:** Simple, Modern, and Creative, plus creation, management, and error screenshots, appear in section 6.3.
+- **Source code:** [GitHub repository](https://github.com/crazyfrogfrog84-dotcom/portgen).
+- **Known requirement gaps:** The form has a location and contact email, but not a separate phone number or full postal address. See section 1.3.
 
 ## 1. System overview
 
@@ -32,9 +44,11 @@ Students and early-career professionals often have information spread across doc
 
 ### 1.3 Scope and limits
 
-The implementation includes portfolio creation, template selection, public viewing, session-based registration and login, an account dashboard, signed guest-link management, portfolio claiming, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment configuration for Render. It does not include password recovery, image uploads, payments, analytics, or user research results. The public demo contains fictional information.
+The implementation includes portfolio creation, template selection, public viewing, profile and project image uploads, session-based registration and login, an account dashboard, signed guest-link management, portfolio claiming, editing, deletion with a ten-second undo window, friendly error pages, a demo portfolio, CI configuration, and Docker deployment to Render. It does not include password recovery, payments, analytics, or user research results. The public demo contains fictional information.
 
-Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set currently passes `composer audit --locked`. The deployment branch now defines a free Render web service and a dedicated Render Free Postgres database for demonstration use. Render resources and live health checks are still pending. The database expires after 30 days, followed by a 14-day upgrade grace period before deletion. See section 8 for the release configuration and current status.
+The assignment brief also lists a contact number and address. The current form offers contact email and a location field, but it does not store a separate phone number or a full postal address. These are known gaps against the brief. Image uploads are implemented and validated; image bytes and alt text are stored in `portfolio_images`.
+
+Laravel 11 was upgraded to Laravel 12.70.0 after its security-fix window ended; the upgraded dependency set passes `composer audit --locked`. The application and its dedicated Render Free Postgres database are configured for the public demonstration. The free database expires after 30 days, followed by a 14-day upgrade grace period before deletion. See section 8 for the release configuration and latest endpoint checks.
 
 ## 2. Users and needs
 
@@ -75,11 +89,11 @@ The user-facing application is a modular Laravel monolith. The controller handle
 | Layer | Technology | Use and status |
 |---|---|---|
 | Server framework | Laravel 12.70.0, PHP 8.3 target | MVC routing, validation, ORM, migrations, signed URLs, and scheduled commands. The local workstation runs PHP 8.5. |
-| Views and styling | Blade, Tailwind CSS 4, Vite 8 | Server-rendered views, design tokens, responsive styling, and production asset bundles. |
-| Database | PostgreSQL 16 in CI and Render | The CI service is isolated. A dedicated Render Free Postgres database is configured for demonstration deployment and has a 30-day expiration. |
+| Views and styling | Blade, Tailwind CSS 4, JavaScript, Vite 8 | Server-rendered views, interactive controls, design tokens, responsive styling, and production asset bundles. |
+| Database | PostgreSQL 16 in CI and Render | CI uses an isolated service. The deployed demonstration uses a dedicated Render Free Postgres database with a 30-day expiration. |
 | Browser checks | Playwright 1.64 and axe-core 4.14 | Keyboard journey, responsive screenshots, touch target checks, and accessibility audits. |
 | Container | Docker, PHP 8.3 Apache on Render | Multi-stage image configuration is committed; the Render image build runs in GitHub Actions. |
-| Hosting | Render web service with Render Postgres | PostgreSQL stores portfolio data, sessions, and cache. The Free database is temporary demo storage. |
+| Hosting | Render Docker web service with Render Postgres | Apache serves the PHP application. PostgreSQL stores portfolio data, sessions, and cache. The Free database is temporary demo storage. |
 | CI | GitHub Actions | Pull requests and main run PHP, PostgreSQL, Docker build, browser, and HCI artifact checks before Render deploys. |
 
 **Table 3. Main workflow stages**
@@ -566,13 +580,13 @@ The R3 log in `docs/USERS_AND_NEEDS.md` records the draft restoration and repeat
 | `DB_URL` | Render Postgres private connection string supplied through the Blueprint. |
 | `SESSION_DRIVER`, `CACHE_STORE`, `QUEUE_CONNECTION` | Database, database, and sync for the stateless container. |
 | `LOG_CHANNEL`, `SESSION_SECURE_COOKIE` | stderr and true for runtime logs and HTTPS session cookies. |
-| `PORTGEN_LIVE_URL` | GitHub repository variable for the smoke workflow, set only after a real deployment. |
+| `PORTGEN_LIVE_URL` | GitHub repository variable used by the live smoke workflow. |
 
 Render's Blueprint supplies the generated Postgres connection string without committing database credentials. Production migrations must be additive; `migrate:fresh` and `db:wipe` are reserved for the isolated CI database. The test harness must reject production database URLs. Render's free instances have ephemeral local storage, so the session and cache tables share state through PostgreSQL. The Free Postgres database is intended only for a demonstration because Render expires it 30 days after creation and deletes its data after a further 14-day upgrade grace period.
 
 ### 8.2 Deployment status and blockers
 
-The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; the service is live and deploys from `main` at `https://portgen-m1uh-if1e.onrender.com`. Direct checks on 2026-10-20 returned HTTP 200 for `/up`, `/portfolios/create`, and `/p/portgen001`. The latest main CI run passed. Its following Live smoke run failed during health/page preflight before the create-and-render test; later direct checks passed.
+The source repository is public at `https://github.com/crazyfrogfrog84-dotcom/portgen`. The Render Blueprint defines service `portgen-m1uh` and database `portgen-m1uh-db`; the service deploys from `main` at `https://portgen-m1uh-if1e.onrender.com`. Direct checks from this workspace on 2026-10-21 returned HTTP 200 for `/portfolios/create` and `/p/portgen001`. The health-path probe did not complete during that check, so these page responses are the deployment evidence recorded here. Earlier, the latest recorded main CI run passed; a subsequent Live smoke run failed during preflight, while later direct page checks passed.
 
 Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer audit --locked` reports no advisories. The Render service uses a generated `APP_KEY`, binds its database through the Blueprint, and deploys after CI checks pass. Production schema changes use additive migrations only. The Free database will require an upgrade or data export before its 30-day expiration and 14-day grace period end.
 
@@ -580,7 +594,7 @@ Laravel 12.70.0 replaces the unsupported Laravel 11 dependency set and `composer
 
 ### 9.1 Local command results
 
-**Table 16. Verification executed in this workspace**
+**Table 16. Previously recorded local verification results**
 
 | Command | Result |
 |---|---|
@@ -598,7 +612,7 @@ The workstation uses PHP 8.5, not the required PHP 8.3 runtime, so PHPUnit repor
 
 ### 9.2 Database, browser, and security checks
 
-Feature tests cover portfolio validation, session registration/login/logout, ownership and claiming, dashboard behavior, signed guest access, template controls, escaping, rate limits, demo seeding, deletion/undo, and purge behavior. Model tests cover UUID and slug behavior, mass-assignment protection, uniqueness, JSON arrays, template constraints, seeder idempotence, and scheduled cleanup. Browser checks cover keyboard flow, draft state, responsive widths, theme modes, error screens, and the Simple owner controls; CI runs the database gates on an isolated PostgreSQL 16 service.
+Feature tests cover portfolio validation, profile and project image processing, session registration/login/logout, ownership and claiming, dashboard behavior, signed guest access, template controls, escaping, rate limits, demo seeding, deletion/undo, and purge behavior. Model tests cover UUID and slug behavior, mass-assignment protection, uniqueness, JSON arrays, template constraints, seeder idempotence, and scheduled cleanup. Browser checks cover keyboard flow, draft state, responsive widths, persistent light/dark/system themes across app, portfolio, and error pages, error screens, and the Simple owner controls; CI runs the database gates on an isolated PostgreSQL 16 service.
 
 The implementation includes CSRF, rate limits on state-changing routes, account ownership and signed guest URLs, strict URL schemes, escaped user content, friendly error views, security headers, an explicit mass-assignment allowlist, and a repository secret scanner. A guest signed URL is a bearer credential and should be kept private. The live smoke workflow checks the service endpoints and then creates and renders a throwaway portfolio after successful CI.
 
@@ -643,8 +657,9 @@ Never point test commands or `migrate:fresh` at a production database. For a sup
 - Keep Laravel 12 dependencies patched and plan the Laravel 13 upgrade before Laravel 12's security-fix date.
 - Keep the Render service `portgen-m1uh` healthy and keep the live create-and-render smoke checks green.
 - Upgrade or export the Render Free Postgres database before its 30-day expiration and 14-day grace period end if any data must be retained.
+- Add separate phone-number and postal-address fields if the project brief requires those details in the published profile.
 - Conduct the five-task classmate study and add real observation and SUS results.
-- Consider profile photos and project images only after launch readiness; validate type, size, alt text, preview, storage, and deletion flows.
+- Keep image-processing, alt-text, storage, and deletion checks in the regression suite as the upload flow evolves.
 - Evaluate skill-logo suggestions with an explicit text fallback and no dependency on color or imagery.
 
 ## 12. Appendices
