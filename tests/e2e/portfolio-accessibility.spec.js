@@ -115,7 +115,7 @@ test('keyboard-first create, publish, manage, template, and delete-undo flows st
         await tabTo(page, page.locator('#full_name'));
         await page.keyboard.press('Tab');
         await expect(page.locator('#full_name')).toHaveAttribute('aria-invalid', 'true');
-        await expect(page.locator('#full_name-client-error')).toHaveText('Enter your name.');
+        await expect(page.locator('#full_name-client-error')).toHaveText('Name is required.');
         await page.keyboard.press('Shift+Tab');
         await page.keyboard.type('Avery Example');
         await tabTo(page, page.locator('#headline'));

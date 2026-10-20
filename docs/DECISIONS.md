@@ -2,6 +2,7 @@
 
 | Date | Decision | Reason |
 |---|---|---|
+| 2026-10-20 | Use `novalidate` with the existing custom validation for the portfolio form, and show the same linked error summary for server failures. | Browser-native validation can silently block the submit handler when a required control is inside a collapsed section; explicit validation can open the section and focus the field before the user retries. |
 | 2026-10-20 | Make the public portfolio a standalone page with one shared section/navigation model and build Simple from the shared `pf` components. | The app-shell header and footer should not duplicate public portfolio landmarks; deriving section links from the same data as the content keeps omitted sections and navigation in sync across templates. |
 | 2026-10-20 | Keep Render's Blueprint auto-deploy trigger at `checksPass` and document the matching service setting. | `render.yaml` already targets `main`; Render documents `checksPass` as deploy-after-CI. A dashboard deploy of a specific commit can disable service auto-deploy, so the Settings value must be checked and restored if that flow was used. |
 | 2026-10-20 | Use Render Free Postgres for the PortGen demonstration deployment. | The user requested a free deployment. Render Free Postgres keeps demo data separate from other projects, but expires after 30 days and deletes data after a 14-day grace period unless upgraded. |
