@@ -68,7 +68,7 @@ class SimpleTemplateDemoSeeder extends Seeder
         $stressAbout = Str::substr(str_repeat("I make digital services easier to understand, navigate, and trust. This line checks long-form wrapping across compact and wide screens.\n\n", 17), 0, 2000 - Str::length($stressAboutSuffix))
             .$stressAboutSuffix;
 
-        $this->upsert('demo-stress', [
+        $this->upsert('demo-stres', [
             'full_name' => $stressName,
             'headline' => $stressHeadline,
             'about_me' => $stressAbout,

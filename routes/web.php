@@ -31,7 +31,7 @@ if (app()->environment(['local', 'testing'])) {
     Route::get('/__local-errors/{status}', fn (string $status) => abort((int) $status))
         ->whereIn('status', ['403', '404', '419', '429', '500']);
     Route::get('/__local/simple-fixture/{fixture}', function (string $fixture) {
-        $slugs = ['demo-minimal' => 'demo-min', 'demo-rich' => 'demo-rich', 'demo-stress' => 'demo-stress'];
+        $slugs = ['demo-minimal' => 'demo-min', 'demo-rich' => 'demo-rich', 'demo-stress' => 'demo-stres'];
         abort_unless(isset($slugs[$fixture]), 404);
         $portfolio = Portfolio::query()->where('slug', $slugs[$fixture])->firstOrFail();
 
