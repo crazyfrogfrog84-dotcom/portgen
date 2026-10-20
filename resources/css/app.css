@@ -4056,7 +4056,7 @@ img.pf-avatar {
 }
 
 .pf-page[data-template="creative"] .pf-site-footer .pf-contact-links a {
-    min-height: 40px;
+    min-height: 44px;
     border-radius: 999px;
     padding: 0.4rem 0.8rem;
 }
