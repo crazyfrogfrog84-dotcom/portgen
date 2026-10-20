@@ -46,5 +46,18 @@ export default async function globalSetup() {
         if (result.stderr) process.stderr.write(result.stderr);
         throw new Error(`Could not prepare the isolated ${connection} browser test database (${result.status ?? 'no exit code'}).`);
     }
+
+    const fixtures = spawnSync('php', ['artisan', 'db:seed', '--class=SimpleTemplateDemoSeeder', '--force'], {
+        cwd: root,
+        env,
+        encoding: 'utf8',
+        windowsHide: true,
+    });
+    if (fixtures.stdout) process.stdout.write(fixtures.stdout);
+    if (fixtures.status !== 0) {
+        if (fixtures.stderr) process.stderr.write(fixtures.stderr);
+        throw new Error(`Could not prepare the isolated ${connection} Simple screenshot fixtures (${fixtures.status ?? 'no exit code'}).`);
+    }
+
     if (connection === 'sqlite' && !fs.existsSync(database)) throw new Error('Browser test database file was not created.');
 }

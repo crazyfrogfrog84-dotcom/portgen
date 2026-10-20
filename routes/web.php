@@ -5,7 +5,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\PortfolioController;
 use App\Http\Controllers\PortfolioImageController;
+use App\Models\Portfolio;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 
 Route::get('/', fn () => redirect()->route('portfolios.create'))->name('home');
 Route::get('/up', HealthController::class)->name('health');
@@ -28,6 +30,13 @@ Route::middleware(['auth', 'auth.no-store'])->group(function () {
 if (app()->environment(['local', 'testing'])) {
     Route::get('/__local-errors/{status}', fn (string $status) => abort((int) $status))
         ->whereIn('status', ['403', '404', '419', '429', '500']);
+    Route::get('/__local/simple-fixture/{fixture}', function (string $fixture) {
+        $slugs = ['demo-minimal' => 'demo-min', 'demo-rich' => 'demo-rich'];
+        abort_unless(isset($slugs[$fixture]), 404);
+        $portfolio = Portfolio::query()->where('slug', $slugs[$fixture])->firstOrFail();
+
+        return redirect(URL::signedRoute('manage.show', ['portfolio' => $portfolio]));
+    })->name('local.simple-fixture');
 }
 Route::post('/store', [PortfolioController::class, 'store'])->middleware('throttle:20,1')->name('portfolios.store');
 

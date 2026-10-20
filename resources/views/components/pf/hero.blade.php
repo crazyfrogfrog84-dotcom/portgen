@@ -8,6 +8,7 @@
     'secondaryLabel' => 'Contact me',
     'imageUrl' => null,
     'imageAlt' => '',
+    'material' => null,
 ])
 
 <section id="home" class="pf-hero" aria-label="Introduction">
@@ -21,8 +22,8 @@
             <p class="pf-hero__summary">{{ $summary }}</p>
         @endif
         <div class="pf-hero__actions">
-            @if ($primaryHref)<a class="button-primary" href="{{ $primaryHref }}">{{ $primaryLabel }}</a>@endif
-            @if ($secondaryHref)<a class="button-secondary" href="{{ $secondaryHref }}">{{ $secondaryLabel }}</a>@endif
+            @if ($primaryHref)<a class="button-primary {{ $material === 'raised' ? 'surface-raised' : '' }}" href="{{ $primaryHref }}">{{ $primaryLabel }}</a>@endif
+            @if ($secondaryHref)<a class="button-secondary {{ $material === 'raised' ? 'surface-raised' : '' }}" href="{{ $secondaryHref }}">{{ $secondaryLabel }}</a>@endif
         </div>
     </div>
     <x-pf.avatar :name="$name" :image-url="$imageUrl" :alt="$imageAlt" />

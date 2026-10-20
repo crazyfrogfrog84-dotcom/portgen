@@ -94,10 +94,12 @@ class PortfolioRoutesTest extends TestCase
         $saveResponse->assertRedirect(route('portfolio.show', ['portfolio' => $portfolio]));
         $this->get($saveResponse->headers->get('Location'))
             ->assertOk()
-            ->assertSee('Step 3 of 3')
             ->assertSee('Your portfolio is ready')
+            ->assertSee('data-ready-banner', false)
             ->assertSee('Copy private link');
-        $this->get($saveResponse->headers->get('Location'))->assertDontSee('Copy private link');
+        $this->get($saveResponse->headers->get('Location'))
+            ->assertDontSee('data-ready-banner', false)
+            ->assertSee('Copy private link');
         $this->assertSame('Modern', $portfolio->fresh()->template_choice);
     }
 

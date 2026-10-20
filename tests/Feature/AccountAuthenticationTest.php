@@ -212,13 +212,39 @@ class AccountAuthenticationTest extends TestCase
             ->assertSee('aria-label="Portfolio owner toolbar"', false)
             ->assertSee('href="'.$publicUrl.'"', false)
             ->assertSee('name="template_choice" value="Creative"', false)
-            ->assertSee('>Save</button>', false)->assertSee('>Cancel</a>', false);
+            ->assertSee('>Save template</button>', false)->assertSee('>Cancel</a>', false)
+            ->assertSee('Previewing Creative. Not saved yet');
         $this->assertSame('Simple', $portfolio->fresh()->template_choice);
 
         $this->get($publicUrl)->assertOk()->assertSee('data-template="simple"', false);
         $this->post(route('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Creative'])
             ->assertRedirect($publicUrl);
         $this->assertSame('Creative', $portfolio->fresh()->template_choice);
+        $this->get($publicUrl)->assertOk()->assertSee('Template saved');
+    }
+
+    public function test_guest_manage_session_can_preview_save_and_cancel_from_the_public_header(): void
+    {
+        $portfolio = Portfolio::factory()->withTemplate('Simple')->create();
+        $manageUrl = URL::signedRoute('manage.show', ['portfolio' => $portfolio]);
+
+        $this->get($manageUrl)->assertOk();
+        $previewUrl = route('portfolio.show', ['portfolio' => $portfolio, 'preview' => 'Modern']);
+        $this->get($previewUrl)->assertOk()
+            ->assertSee('data-template="modern"', false)
+            ->assertSee('data-owner-toolbar', false)
+            ->assertSee('Previewing Modern. Not saved yet')
+            ->assertSee('Copy private link')
+            ->assertDontSee('value="'.$manageUrl.'"', false);
+        $this->assertSame('Simple', $portfolio->fresh()->template_choice);
+
+        $this->get(route('portfolio.show', ['portfolio' => $portfolio]))
+            ->assertOk()->assertSee('data-template="simple"', false);
+        $this->post(URL::signedRoute('portfolio.save-template', ['portfolio' => $portfolio]), ['template_choice' => 'Creative'])
+            ->assertRedirect(route('portfolio.show', ['portfolio' => $portfolio]));
+        $this->assertSame('Creative', $portfolio->fresh()->template_choice);
+        $this->get(route('portfolio.show', ['portfolio' => $portfolio]))
+            ->assertOk()->assertSee('Template saved');
     }
 
     public function test_visitors_ignore_template_preview_and_never_see_the_owner_toolbar(): void
@@ -229,6 +255,20 @@ class AccountAuthenticationTest extends TestCase
             ->assertOk()->assertSee('data-template="simple"', false)
             ->assertDontSee('data-owner-toolbar', false)
             ->assertDontSee('Portfolio owner toolbar');
+    }
+
+    public function test_other_logged_in_users_do_not_get_account_owner_controls_or_template_previews(): void
+    {
+        $owner = User::factory()->create();
+        $other = User::factory()->create();
+        $portfolio = Portfolio::factory()->withTemplate('Simple')->create();
+        $portfolio->user_id = $owner->id;
+        $portfolio->save();
+
+        $this->actingAs($other)->get(route('portfolio.show', ['portfolio' => $portfolio, 'preview' => 'Creative']))
+            ->assertOk()->assertSee('data-template="simple"', false)
+            ->assertDontSee('data-owner-toolbar', false)
+            ->assertSee('data-theme-toggle', false);
     }
 
     public function test_public_portfolios_have_compact_accessible_theme_controls(): void

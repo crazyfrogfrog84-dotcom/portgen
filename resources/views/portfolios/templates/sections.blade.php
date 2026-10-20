@@ -4,38 +4,42 @@
         ? array_slice($portfolio->skills, 0, 3)
         : array_slice($portfolio->interests ?? [], 0, 3);
     $hasContact = filled($portfolio->contact_email) || count($portfolio->social_links ?? []) > 0;
+    $aboutFacts = array_filter([
+        'Location' => $portfolio->location,
+        'Education' => $portfolio->education[0]['qualification'] ?? $portfolio->education[0]['institution'] ?? null,
+        'Availability' => $portfolio->availability,
+        'Interests' => count($portfolio->interests ?? []) ? implode(', ', $portfolio->interests) : null,
+        'Email' => $portfolio->contact_email,
+    ], fn ($value) => filled($value));
+    $hasAbout = filled($portfolio->about_me) || count($aboutFacts) > 0;
 @endphp
 
 <div class="pf-sections">
-    <x-pf.section id="about" title="About me" class="pf-about">
-        <div class="pf-about__grid">
-            <div class="pf-about__copy">
-                @if (filled($portfolio->about_me))
-                    <p class="pf-about__text">{{ $portfolio->about_me }}</p>
-                @endif
-                @if (count($focusItems))
-                    <ul class="pf-focus-list" aria-label="Areas of focus">
-                        @foreach ($focusItems as $focusItem)
-                            <li><x-pf.skill-chip :label="$focusItem" /></li>
+    @if ($hasAbout)
+        <x-pf.section id="about" title="About me" class="pf-about">
+            <div class="pf-about__grid">
+                <div class="pf-about__copy">
+                    @if (filled($portfolio->about_me))
+                        <p class="pf-about__text">{{ $portfolio->about_me }}</p>
+                    @endif
+                    @if (count($focusItems))
+                        <ul class="pf-focus-list" aria-label="Areas of focus">
+                            @foreach ($focusItems as $focusItem)
+                                <li><x-pf.skill-chip :label="$focusItem" /></li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+                @if (count($aboutFacts))
+                    <dl class="pf-facts">
+                        @foreach ($aboutFacts as $label => $value)
+                            <div class="pf-facts__row"><dt>{{ $label }}</dt><dd>{{ $value }}</dd></div>
                         @endforeach
-                    </ul>
+                    </dl>
                 @endif
             </div>
-            <dl class="pf-facts">
-                <div class="pf-facts__row"><dt>Name</dt><dd>{{ $portfolio->full_name }}</dd></div>
-                @if (filled($portfolio->location))
-                    <div class="pf-facts__row"><dt>Location</dt><dd>{{ $portfolio->location }}</dd></div>
-                @endif
-                @if (count($portfolio->education ?? []))
-                    @php $education = $portfolio->education[0]; @endphp
-                    <div class="pf-facts__row"><dt>Education</dt><dd>{{ $education['qualification'] ?? $education['institution'] ?? '' }}</dd></div>
-                @endif
-                @if (count($portfolio->interests ?? []))
-                    <div class="pf-facts__row"><dt>Interests</dt><dd>{{ implode(', ', $portfolio->interests) }}</dd></div>
-                @endif
-            </dl>
-        </div>
-    </x-pf.section>
+        </x-pf.section>
+    @endif
 
     @if (count($portfolio->skills ?? []))
         <x-pf.section id="skills" title="Skills" class="pf-skills">
