@@ -43,6 +43,7 @@
 | 2026-10-20 | Give Creative a cool mist canvas, cobalt controls, tactile paper cards, warm tape details, and line SVG icons. | The supplied Creative reference uses a cool blue-gray backdrop and dimensional paper panels. Token-driven shadows, visible borders, named controls, and reduced-motion/contrast fallbacks preserve legibility while shared sections and behavior stay in parity. |
 | 2026-10-20 | Use a clarity-first Simple layout with one content width, a balanced hero, minimal empty states, and owner controls in the shared header. | The supplied image is a hierarchy and mood reference; a 240px monogram and content-dependent sections keep the same layout composed for sparse and rich portfolios. Neumorphic shadows remain decorative and retain contrast borders and keyboard focus. |
 | 2026-10-20 | Namespace the registration throttle separately from general portfolio write throttles. | Laravel's unprefixed route throttle key is shared by routes from the same IP; unrelated portfolio actions must not consume the signup allowance. The 10-per-minute registration limit stays unchanged. |
+| 2026-10-20 | Use one saved light/dark/system theme preference across app pages, portfolio pages, and error pages. | A single `portgen:theme` setting keeps the interface consistent while allowing System to follow the device preference; every shared page layout exposes the same labelled control. |
 
 ## Known limitation of neumorphism and our mitigation
 
