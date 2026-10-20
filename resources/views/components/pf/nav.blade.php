@@ -5,7 +5,7 @@
         <ul class="pf-nav__list">
             @foreach ($items as $item)
                 <li>
-                    <a class="pf-nav__link" href="{{ $item['href'] }}" @if (! empty($item['current'])) aria-current="true" @endif>
+                    <a class="pf-nav__link {{ ! empty($item['current']) ? 'surface-inset' : '' }}" href="{{ $item['href'] }}" @if (! empty($item['current'])) aria-current="true" @endif>
                         {{ $item['label'] }}
                     </a>
                 </li>

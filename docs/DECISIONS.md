@@ -38,3 +38,14 @@
 | 2026-10-20 | Use generic login failures for unknown email and incorrect password, with a dummy hash check for unknown accounts. | Matching messages and password-hash work reduce account-enumeration and timing signals; the interface explains how to recover without confirming whether an address is registered. |
 | 2026-10-20 | Accept only a same-site path or same-host URL as a post-login destination and discard its scheme and host. | Intended URLs are convenient after login, but the app must not become an open redirect. |
 | 2026-10-20 | Preview portfolio templates through a query parameter and persist only on explicit Save. | Owners can compare the three templates on the public page, while visitors always see the saved template and cannot alter it with a query string. |
+| 2026-10-20 | Give Simple a neumorphic surface style through light/dark material tokens; reserve glassmorphism for Modern and paper-and-tape skeuomorphism for Creative. | Material changes affect surfaces and decoration only; shared sections, navigation, controls, and interactions remain consistent. |
+
+## Known limitation of neumorphism and our mitigation
+
+- **a.** Every interactive surface keeps a 1px border with at least 3:1 contrast against its backing surface.
+- **b.** Text and icons meet 4.5:1 against the actual raised or inset surface; shadows never carry text.
+- **c.** Primary buttons keep a solid accent fill and high-contrast text; selected controls also show a check or underline.
+- **d.** Focus rings use the focus token, are at least 2px, contrast with both surface and page, and stay outside clipped areas.
+- **e.** Increased-contrast and forced-colors modes remove shadows and use visible 2px borders.
+- **f.** Light and dark modes use separately tuned highlight and shadow pairs.
+- **g.** Shadows do not affect layout, and dense skill lists drop the shadow while retaining borders.

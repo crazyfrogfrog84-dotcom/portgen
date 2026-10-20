@@ -22,6 +22,8 @@ class EnsurePortfolioOwner
         }
 
         if ($portfolio->user_id === null && URL::hasValidSignature($request)) {
+            $request->session()->put('guest_portfolio_owners.'.$portfolio->id, true);
+
             return $next($request);
         }
 

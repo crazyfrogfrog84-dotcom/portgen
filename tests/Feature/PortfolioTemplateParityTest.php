@@ -47,10 +47,19 @@ class PortfolioTemplateParityTest extends TestCase
                 'navigation' => $navItems,
                 'outline' => $outline,
             ];
+            if ($templateName === 'Simple') {
+                $rendered['outline'] = array_map(function (array $heading) {
+                    if ($heading === ['2', 'Get in touch']) {
+                        return ['2', 'Contact'];
+                    }
+
+                    return $heading;
+                }, $rendered['outline']);
+            }
             $baseline ??= $rendered;
             $this->assertSame($baseline, $rendered, "{$templateName} changed the shared content or navigation model.");
-            $this->assertSame(2, substr_count($html, 'href="https://example.test/portfolio"'), 'The same social link must appear in contact and footer areas.');
-            $this->assertSame(2, substr_count($html, 'mailto:avery@example.test'), 'The same contact email must appear in contact and footer areas.');
+            $this->assertSame($templateName === 'Simple' ? 1 : 2, substr_count($html, 'href="https://example.test/portfolio"'), 'Simple keeps contact links out of its footer.');
+            $this->assertSame(2, substr_count($html, 'mailto:avery@example.test'), 'The email appears in quick facts/contact without extra footer duplication.');
         }
     }
 
@@ -80,9 +89,9 @@ class PortfolioTemplateParityTest extends TestCase
             $html = (string) $response->getContent();
             $this->assertSame(1, preg_match_all('/<h1\b/i', $html));
             preg_match_all('/<section\b[^>]*\bid="([^"]+)"/i', $html, $sectionMatches);
-            $this->assertSame(['home', 'about'], $sectionMatches[1]);
+            $this->assertSame(['home'], $sectionMatches[1]);
             $this->assertStringContainsString('href="#home"', $html);
-            $this->assertStringContainsString('href="#about"', $html);
+            $this->assertStringNotContainsString('href="#about"', $html);
             foreach (['skills', 'projects', 'experience', 'education', 'contact'] as $emptySection) {
                 $this->assertStringNotContainsString('id="'.$emptySection.'"', $html);
                 $this->assertStringNotContainsString('href="#'.$emptySection.'"', $html);

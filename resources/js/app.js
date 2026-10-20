@@ -651,8 +651,10 @@ if (sectionNav && 'IntersectionObserver' in window) {
 
     const setCurrentSection = (sectionId) => {
         for (const link of sectionLinks) {
-            if (link.hash === `#${sectionId}`) link.setAttribute('aria-current', 'true');
+            const current = link.hash === `#${sectionId}`;
+            if (current) link.setAttribute('aria-current', 'true');
             else link.removeAttribute('aria-current');
+            link.classList.toggle('surface-inset', current);
         }
     };
 
@@ -683,3 +685,75 @@ if (sectionNav && 'IntersectionObserver' in window) {
         if (link?.hash) setCurrentSection(decodeURIComponent(link.hash.slice(1)));
     });
 }
+
+for (const radioGroup of document.querySelectorAll('[data-template-radiogroup]')) {
+    const options = [...radioGroup.querySelectorAll('[data-template-option]')];
+    const selected = options.find((option) => option.getAttribute('aria-checked') === 'true');
+    options.forEach((option) => option.setAttribute('tabindex', option === selected ? '0' : '-1'));
+
+    radioGroup.addEventListener('keydown', (event) => {
+        if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        const current = options.indexOf(event.target.closest('[data-template-option]'));
+        if (current < 0 || options.length < 2) return;
+        event.preventDefault();
+        const offset = ['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1;
+        const next = options[(current + offset + options.length) % options.length];
+        next.focus();
+        next.click();
+    });
+}
+
+for (const disclosure of document.querySelectorAll('[data-owner-disclosure]')) {
+    const button = disclosure.querySelector('[data-disclosure-button]');
+    const syncExpanded = () => button?.setAttribute('aria-expanded', String(disclosure.open));
+    disclosure.addEventListener('toggle', syncExpanded);
+    syncExpanded();
+    disclosure.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !disclosure.open) return;
+        event.preventDefault();
+        disclosure.open = false;
+        button?.focus();
+    });
+}
+
+for (const banner of document.querySelectorAll('[data-ready-banner]')) {
+    const portfolioSlug = document.querySelector('.pf-page')?.dataset.portfolioSlug;
+    const key = portfolioSlug ? `portgen:ready-dismissed:${portfolioSlug}` : null;
+    try {
+        if (key && sessionStorage.getItem(key) === '1') banner.hidden = true;
+    } catch { /* The server only shows this banner on the creation redirect. */ }
+    banner.querySelector('[data-dismiss-ready]')?.addEventListener('click', () => {
+        banner.hidden = true;
+        try { if (key) sessionStorage.setItem(key, '1'); } catch { /* Dismissal still applies for this page. */ }
+    });
+}
+
+document.addEventListener('click', async (event) => {
+    const copyButton = event.target.closest('[data-copy-link]');
+    if (!copyButton) return;
+    const status = copyButton.closest('[data-copy-context]')?.querySelector('[data-copy-status]');
+    const value = copyButton.dataset.copyLink;
+    if (!value) return;
+
+    try {
+        await navigator.clipboard.writeText(value);
+    } catch {
+        const fallback = document.createElement('textarea');
+        fallback.value = value;
+        fallback.setAttribute('aria-hidden', 'true');
+        fallback.tabIndex = -1;
+        fallback.style.position = 'fixed';
+        fallback.style.opacity = '0';
+        document.body.append(fallback);
+        fallback.select();
+        const copied = document.execCommand('copy');
+        fallback.remove();
+        if (!copied) {
+            if (status) status.textContent = 'Copy is unavailable in this browser.';
+            announce('Copy is unavailable in this browser.');
+            return;
+        }
+    }
+    if (status) status.textContent = 'Link copied';
+    announce('Link copied');
+});

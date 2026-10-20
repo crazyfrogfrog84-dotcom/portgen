@@ -29,9 +29,12 @@ class PortfolioController extends Controller
         [$data, $projectIndexMap] = $this->structuredData($request->validated(), $request);
         $portfolio = DB::transaction(function () use ($data, $projectIndexMap, $request, $imageManager) {
             $portfolio = Portfolio::create($data);
+            $request->session()->put('portfolio_creation_pending.'.$portfolio->id, true);
             if ($request->user()) {
                 $portfolio->user_id = $request->user()->id;
                 $portfolio->save();
+            } else {
+                $request->session()->put('guest_portfolio_owners.'.$portfolio->id, true);
             }
             $imageManager->sync($portfolio, $request, $projectIndexMap);
 
@@ -74,7 +77,7 @@ class PortfolioController extends Controller
     public function saveTemplate(SaveTemplateRequest $request, Portfolio $portfolio): RedirectResponse
     {
         $this->authorize('manage', $portfolio);
-        $ownerManageUrl = session('ownerManageUrl');
+        $isInitialChoice = (bool) $request->session()->pull('portfolio_creation_pending.'.$portfolio->id, false);
         $portfolio->template_choice = $request->validated('template_choice');
         $portfolio->save();
 
@@ -83,10 +86,10 @@ class PortfolioController extends Controller
                 ->with('status', 'Your template has been changed.');
         }
 
-        $response = redirect()->route('portfolio.show', ['portfolio' => $portfolio])
-            ->with('status', 'Your portfolio is ready to share.');
+        $request->session()->flash($isInitialChoice ? 'portfolio_ready_slug' : 'template_saved_slug', $portfolio->slug);
 
-        return $portfolio->user_id === null ? $response->with('ownerManageUrl', $ownerManageUrl) : $response;
+        return redirect()->route('portfolio.show', ['portfolio' => $portfolio])
+            ->with('status', $isInitialChoice ? 'Your portfolio is ready to share.' : 'Template saved.');
     }
 
     public function show(Request $request, Portfolio $portfolio): View|RedirectResponse
@@ -97,10 +100,14 @@ class PortfolioController extends Controller
 
         $storedTemplate = strtolower($portfolio->template_choice);
         $isAccountOwner = $portfolio->user_id !== null && (int) Auth::id() === (int) $portfolio->user_id;
+        $isGuestOwner = $portfolio->user_id === null && (bool) session('guest_portfolio_owners.'.$portfolio->id, false);
+        $isPortfolioOwner = $isAccountOwner || $isGuestOwner;
         $requestedPreview = $request->query('preview');
         $requestedPreview = is_string($requestedPreview) ? strtolower($requestedPreview) : '';
         $previewChoices = ['simple', 'modern', 'creative'];
-        $template = $isAccountOwner && in_array($requestedPreview, $previewChoices, true)
+        $isTemplatePreview = $isPortfolioOwner && in_array($requestedPreview, $previewChoices, true)
+            && $requestedPreview !== $storedTemplate;
+        $template = $isTemplatePreview
             ? $requestedPreview
             : $storedTemplate;
 
@@ -108,9 +115,15 @@ class PortfolioController extends Controller
         $profileImage = $portfolio->images->firstWhere('kind', 'profile');
         $projectImages = $portfolio->images->where('kind', 'project')->keyBy('project_index');
         $hasContact = filled($portfolio->contact_email) || count($portfolio->social_links ?? []) > 0;
+        $hasAbout = filled($portfolio->about_me)
+            || filled($portfolio->location)
+            || filled($portfolio->availability)
+            || count($portfolio->education ?? []) > 0
+            || count($portfolio->interests ?? []) > 0
+            || filled($portfolio->contact_email);
         $navItems = array_values(array_filter([
             ['label' => 'Home', 'href' => '#home', 'current' => true],
-            ['label' => 'About', 'href' => '#about'],
+            $hasAbout ? ['label' => 'About', 'href' => '#about'] : null,
             count($portfolio->skills ?? []) ? ['label' => 'Skills', 'href' => '#skills'] : null,
             count($portfolio->projects ?? []) ? ['label' => 'Projects', 'href' => '#projects'] : null,
             count($portfolio->work_experience ?? []) ? ['label' => 'Experience', 'href' => '#experience'] : null,
@@ -122,9 +135,17 @@ class PortfolioController extends Controller
             'portfolio' => $portfolio,
             'template' => $template,
             'selectedTemplate' => ucfirst($template),
-            'isTemplatePreview' => $isAccountOwner && in_array($requestedPreview, $previewChoices, true),
-            'ownerManageUrl' => session('ownerManageUrl'),
+            'isTemplatePreview' => $isTemplatePreview,
+            'isPortfolioOwner' => $isPortfolioOwner,
             'isAccountOwner' => $isAccountOwner,
+            'ownerManageUrl' => $isGuestOwner ? $this->ownerUrl('manage.show', $portfolio) : null,
+            'ownerUrls' => $isPortfolioOwner ? [
+                'edit' => $this->ownerUrl('manage.edit', $portfolio),
+                'manage' => $this->ownerUrl('manage.show', $portfolio),
+                'saveTemplate' => $this->ownerUrl('portfolio.save-template', $portfolio),
+            ] : [],
+            'showReadyBanner' => session('portfolio_ready_slug') === $portfolio->slug,
+            'showTemplateSaved' => session('template_saved_slug') === $portfolio->slug,
             'profileImage' => $profileImage,
             'projectImages' => $projectImages,
             'navItems' => $navItems,
