@@ -22,7 +22,7 @@
             </aside>
         @endif
         <header class="pf-site-header">
-            <div class="pf-site-header__inner">
+            <div class="pf-site-header__inner {{ $template === 'modern' ? 'surface-raised' : '' }} {{ $template === 'modern' && $isPortfolioOwner ? 'pf-site-header__inner--owner' : '' }}">
                 <a class="pf-brand" href="#home">
                     <span class="pf-brand__mark" aria-hidden="true">{{ $brandMark }}</span>
                     <span class="pf-brand__name">{{ $portfolio->full_name }}</span>

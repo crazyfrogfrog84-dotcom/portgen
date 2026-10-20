@@ -8,9 +8,10 @@
     'imageWidth' => null,
     'imageHeight' => null,
     'simple' => false,
+    'material' => null,
 ])
 
-<article class="pf-project-card {{ $simple ? 'surface-raised pf-project-card--simple' : '' }}">
+<article class="pf-project-card {{ $simple || $material === 'raised' ? 'surface-raised' : '' }} {{ $simple ? 'pf-project-card--simple' : '' }}">
     @if ($imageUrl)
         <img class="pf-project-card__image" src="{{ $imageUrl }}" alt="{{ $imageAlt }}" width="{{ $imageWidth }}" height="{{ $imageHeight }}" loading="lazy">
     @else
@@ -23,7 +24,7 @@
     @if (count($tags))
         <ul class="pf-project-card__tags" aria-label="Project technologies">
             @foreach ($tags as $tag)
-                <li><x-pf.skill-chip :label="$tag" :material="$simple ? 'raised' : null" /></li>
+                <li><x-pf.skill-chip :label="$tag" :material="$simple || $material === 'raised' ? 'raised' : null" /></li>
             @endforeach
         </ul>
     @endif

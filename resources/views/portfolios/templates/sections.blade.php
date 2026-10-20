@@ -4,6 +4,12 @@
         ? array_slice($portfolio->skills, 0, 3)
         : array_slice($portfolio->interests ?? [], 0, 3);
     $hasContact = filled($portfolio->contact_email) || count($portfolio->social_links ?? []) > 0;
+    $modernMaterial = ($templateName ?? null) === 'modern';
+    $skillMarks = [
+        'css' => '3', 'css3' => '3', 'figma' => 'F', 'git' => '◇', 'html' => '5', 'html5' => '5',
+        'javascript' => 'JS', 'js' => 'JS', 'laravel' => 'L', 'node.js' => 'N', 'php' => 'PHP',
+        'python' => 'Py', 'react' => '⚛', 'tailwind css' => '≈', 'typescript' => 'TS', 'vue' => 'V',
+    ];
     $aboutFacts = array_filter([
         'Location' => $portfolio->location,
         'Education' => $portfolio->education[0]['qualification'] ?? $portfolio->education[0]['institution'] ?? null,
@@ -16,7 +22,7 @@
 
 <div class="pf-sections">
     @if ($hasAbout)
-        <x-pf.section id="about" title="About me" class="pf-about">
+        <x-pf.section id="about" title="About me" class="pf-about {{ $modernMaterial ? 'surface-raised' : '' }}">
             <div class="pf-about__grid">
                 <div class="pf-about__copy">
                     @if (filled($portfolio->about_me))
@@ -25,13 +31,16 @@
                     @if (count($focusItems))
                         <ul class="pf-focus-list" aria-label="Areas of focus">
                             @foreach ($focusItems as $focusItem)
-                                <li><x-pf.skill-chip :label="$focusItem" /></li>
+                                @php
+                                    $focusMark = $skillMarks[mb_strtolower(trim($focusItem))] ?? null;
+                                @endphp
+                                <li><x-pf.skill-chip :label="$focusItem" :icon="$modernMaterial ? $focusMark : null" :material="$modernMaterial ? 'raised' : null" /></li>
                             @endforeach
                         </ul>
                     @endif
                 </div>
                 @if (count($aboutFacts))
-                    <dl class="pf-facts">
+                    <dl class="pf-facts {{ $modernMaterial ? 'surface-inset' : '' }}">
                         @foreach ($aboutFacts as $label => $value)
                             <div class="pf-facts__row"><dt>{{ $label }}</dt><dd>{{ $value }}</dd></div>
                         @endforeach
@@ -43,9 +52,12 @@
 
     @if (count($portfolio->skills ?? []))
         <x-pf.section id="skills" title="Skills" class="pf-skills">
-            <ul class="pf-skills-grid">
+            <ul class="pf-skills-grid {{ count($portfolio->skills ?? []) > 12 ? 'pf-skills-grid--dense' : '' }}">
                 @foreach ($portfolio->skills as $skill)
-                    <li><x-pf.skill-chip :label="$skill" /></li>
+                    @php
+                        $skillMark = $skillMarks[mb_strtolower(trim($skill))] ?? null;
+                    @endphp
+                    <li><x-pf.skill-chip :label="$skill" :icon="$modernMaterial ? $skillMark : null" :material="$modernMaterial ? 'raised' : null" /></li>
                 @endforeach
             </ul>
         </x-pf.section>
@@ -65,6 +77,7 @@
                             :image-alt="$projectImages->has($index) ? $projectImages[$index]->alt : ''"
                             :image-width="$projectImages->has($index) ? $projectImages[$index]->width : null"
                             :image-height="$projectImages->has($index) ? $projectImages[$index]->height : null"
+                            :material="$modernMaterial ? 'raised' : null"
                         />
                     </li>
                 @endforeach
@@ -108,7 +121,7 @@
     @endif
 
     @if ($hasContact)
-        <x-pf.section id="contact" title="Contact" class="pf-contact">
+        <x-pf.section id="contact" title="Contact" class="pf-contact {{ $modernMaterial ? 'surface-raised' : '' }}">
             <x-pf.contact-links :links="$portfolio->social_links ?? []" :email="$portfolio->contact_email" />
         </x-pf.section>
     @endif
