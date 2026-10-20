@@ -27,7 +27,7 @@
                     <span class="pf-brand__mark" aria-hidden="true">{{ $brandMark }}</span>
                     <span class="pf-brand__name">{{ $portfolio->full_name }}</span>
                 </a>
-                <x-pf.nav :items="$navItems" />
+                <x-pf.nav :items="$navItems" :template="$template" />
                 <div class="pf-site-header__tools {{ $isPortfolioOwner ? 'pf-site-header__tools--owner' : '' }}">
                     @if ($isPortfolioOwner)
                         <x-pf.owner-toolbar
@@ -47,6 +47,6 @@
         <main id="main" class="pf-main" tabindex="-1">
             @include('portfolios.templates.'.$template, ['portfolio' => $portfolio, 'profileImage' => $profileImage, 'projectImages' => $projectImages])
         </main>
-        <x-pf.footer :name="$portfolio->full_name" :links="$portfolio->social_links ?? []" :email="$portfolio->contact_email" :simple="$template === 'simple'" />
+        <x-pf.footer :name="$portfolio->full_name" :links="$portfolio->social_links ?? []" :email="$portfolio->contact_email" :simple="$template === 'simple'" :creative="$template === 'creative'" />
     </div>
 @endsection
