@@ -652,11 +652,11 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
-const publicTemplates = document.querySelectorAll('[data-template][data-theme]');
-const themeOptions = document.querySelectorAll('[data-theme-toggle] input[name="portfolio-theme"]');
+const publicTemplates = [...document.querySelectorAll('[data-template][data-theme]')];
+const themeOptions = [...document.querySelectorAll('[data-theme-toggle] input[name="portfolio-theme"]')];
 const validThemes = new Set(['system', 'light', 'dark']);
 
-if (publicTemplates.length && themeOptions.length) {
+if (themeOptions.length) {
     let selectedTheme = 'system';
     try {
         const savedTheme = localStorage.getItem('portgen:theme');
@@ -667,6 +667,7 @@ if (publicTemplates.length && themeOptions.length) {
 
     const applyTheme = (theme) => {
         if (!validThemes.has(theme)) return;
+        document.documentElement.dataset.appTheme = theme;
         for (const template of publicTemplates) template.dataset.theme = theme;
         for (const option of themeOptions) option.checked = option.value === theme;
         selectedTheme = theme;

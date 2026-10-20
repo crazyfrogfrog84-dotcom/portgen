@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-app-theme="system">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -34,6 +34,7 @@
                     <a class="button-secondary" href="{{ route('register') }}">Sign up</a>
                 @endauth
             </nav>
+            <x-pf.theme-toggle template="app" scope="app" />
         </div>
     </header>
     @if (session('status'))
